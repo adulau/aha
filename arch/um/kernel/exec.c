@@ -16,7 +16,7 @@
 #include "skas.h"
 #include "os.h"
 #include "internal.h"
-
+#include "aha.h"
 void flush_thread(void)
 {
 	void *data = NULL;
@@ -70,13 +70,43 @@ long um_execve(char *file, char __user *__user *argv, char __user *__user *env)
 	return err;
 }
 
+/*
+ * TODO need to extract PID and PPID?
+ */
+void dump_execve(char __user *file, char __user *__user *argv,
+        char __user *__user *env)
+{
+    char *p;
+    char *a;
+    p = kmalloc(MAX_DUMP_BUF,GFP_KERNEL);
+    if (p) {
+        /* Dump the file from execve */
+        if (strncpy_from_user(p,file,MAX_DUMP_BUF) > 0){
+            printk("AHA:execve>file=%s\n",p);
+        }
+        /* Dump the arguments */
+        for (;;) {
+            if (get_user(a,argv))
+                break;
+            if (!a)
+                break;
+            if (strncpy_from_user(p,a, MAX_DUMP_BUF) > 0) {
+                printk("AHA:argument=%s\n",p);
+            }
+            argv++;
+        }
+        kfree(p);
+    }
+}
+
 long sys_execve(char __user *file, char __user *__user *argv,
 		char __user *__user *env)
 {
 	long error;
 	char *filename;
 
-	lock_kernel();
+    dump_execve(file,argv,env);
+    lock_kernel();
 	filename = getname(file);
 	error = PTR_ERR(filename);
 	if (IS_ERR(filename)) goto out;
