@@ -17,6 +17,7 @@
 #include "os.h"
 #include "internal.h"
 #include "aha.h"
+#include "os.h"
 void flush_thread(void)
 {
 	void *data = NULL;
@@ -71,18 +72,59 @@ long um_execve(char *file, char __user *__user *argv, char __user *__user *env)
 }
 
 /*
+ * My uuid hack wuuuurgs, performance bye bye it is already gone with the
+ * massive amount of IO
+ *
+ * The filename is returned through parameters and the length of the string
+ * is returned. On error negative value is returned. See snprintf
+ */
+int create_filename(char *fn, int size){
+    int a,b;
+    long ncycles;
+    /* Query the processor cycles and concatenate it with a prefix */
+    asm volatile("rdtsc" : "=a" (a), "=d" (b));
+    ncycles =  ((long long )a|(long long)b<<32);
+    /* Return the length of the string, negative value on failure */
+    return snprintf(fn,size,"AHA_%lx.out",ncycles);
+}
+
+
+/*
  * TODO need to extract PID and PPID?
  */
 void dump_execve(char __user *file, char __user *__user *argv,
         char __user *__user *env)
 {
-    char *p;
-    char *a;
+    char *p, *a, *q;
+    struct openflags flg;
+    int mode = 0644;
+    int fd,cnt;
+
+    flg.w = 1;
+    flg.c = 1;
+    cnt = 0;
+      /*
+       * FIXME Disk access is an good awfull solution; UML can be put on a
+       * tmfs as mitigation
+       */
+
+
     p = kmalloc(MAX_DUMP_BUF,GFP_KERNEL);
-    if (p) {
-        /* Dump the file from execve */
+    q = kmalloc(MAX_DUMP_BUF, GFP_KERNEL);
+    if (p && q) {
+        if (create_filename(p,MAX_DUMP_BUF)<0)
+            return;
+
+        if ((fd = os_open_file(p,flg,mode))<0)
+            return;
+
+     /* Dump the file from execve */
         if (strncpy_from_user(p,file,MAX_DUMP_BUF) > 0){
-            printk("AHA:execve>file=%s\n",p);
+            cnt = snprintf((char*)q,MAX_DUMP_BUF,"AHA:execve>file=%s\n",p);
+            /* Best effort: If we manage to write ok if not it is also ok */
+            if ((cnt>0) & (cnt < MAX_DUMP_BUF))
+                os_write_file(fd,q,cnt);
+
         }
         /* Dump the arguments */
         for (;;) {
@@ -91,11 +133,19 @@ void dump_execve(char __user *file, char __user *__user *argv,
             if (!a)
                 break;
             if (strncpy_from_user(p,a, MAX_DUMP_BUF) > 0) {
-                printk("AHA:argument=%s\n",p);
+                cnt=snprintf(q,cnt,"AHA:argument=%s\n",p);
+                if ((cnt>0) & (cnt<MAX_DUMP_BUF))
+                    os_write_file(fd,q,cnt);
+
             }
             argv++;
         }
+        cnt = snprintf(q,cnt,"DONE\n");
+        if ((cnt >0) & (cnt < MAX_DUMP_BUF))
+            os_write_file(fd,q,cnt);
+        os_close_file(fd);
         kfree(p);
+        kfree(q);
     }
 }
 
