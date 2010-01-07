@@ -156,7 +156,7 @@ void dump_execve(char __user *file, char __user *__user *argv,
 
 
         /* FIXME the MAGIC word is not escaped it could emerge as argument */
-        cnt = snprintf(q,cnt,"DONE\n");
+        cnt = snprintf(q,cnt,"DONE=1\n");
         if ((cnt >0) & (cnt < MAX_DUMP_BUF))
             os_write_file(fd,q,cnt);
         os_close_file(fd);
