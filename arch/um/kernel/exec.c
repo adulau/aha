@@ -97,7 +97,8 @@ int create_filename(char *fn, int size){
  * The dumping is done in a best effort manner. If it succeds
  * to write all the data the tag / line DONE is at the end of the
  * file
- * TODO need to extract PID and PPID?
+ * TODO clone system calls should be monitored true aiming to avoid disrupted
+ * trees
  */
 void dump_execve(char __user *file, char __user *__user *argv,
         char __user *__user *env)
