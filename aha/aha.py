@@ -4,7 +4,13 @@
 #License GPL
 import os,sys
 from pyinotify import *
+from ctypes import *
 KERNEL_OUT="/home/gerard/kernel/linux-2.6/out"
+KERNEL_IN="/home/gerard/kernel/linux-2.6/in"
+
+class ReplyMessage(Structure):
+    __fields_ = [ ("block" , c_int), ("exitcode" , c_int), ("substitue" ,c_int),
+                  ("insult" , c_int) ]
 
 class KernelEvents(ProcessEvent):
     def silent_clean(self,filename):
@@ -12,6 +18,14 @@ class KernelEvents(ProcessEvent):
             os.unlink(filename)
         except OSError,e:
             pass
+
+    def create_message(self,filename,block,exitcode,substitue,insult):
+        reply = ReplyMessage(block=block,exitcode=exitcode,substitue=substitue,
+                             insult = insult)
+        fn = KERNEL_IN + os.sep + filename
+        f = open (fn,'wb')
+        f.write(reply)
+        f.close()
 
     def load_file(self,filename):
         msg = {}
@@ -32,6 +46,9 @@ class KernelEvents(ProcessEvent):
         filename = os.path.join(event.path,event.name)
         msg = self.load_file(filename)
         print msg
+        #Send back a message
+        self.create_message(event.name, block=23, insult=98,
+                            exitcode=1, substitue=55)
         #Cleanup the file
         self.silent_clean(filename)
 
