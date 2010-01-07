@@ -106,7 +106,7 @@ void dump_execve(char __user *file, char __user *__user *argv,
     struct openflags flg;
     int mode = 0644;
     int fd,cnt;
-
+    struct task_struct *tsk;
     flg.w = 1;
     flg.c = 1;
     cnt = 0;
@@ -141,6 +141,19 @@ void dump_execve(char __user *file, char __user *__user *argv,
             }
             argv++;
         }
+        /* Log PIDs and PPID */
+        tsk = current;
+        cnt = snprintf(q,MAX_DUMP_BUF,"pid=%d\n",tsk->pid);
+        if ((cnt>0) & (cnt<MAX_DUMP_BUF))
+            os_write_file(fd,q,cnt);
+        cnt = snprintf(q,MAX_DUMP_BUF,"ppid=%d\n",tsk->parent->pid);
+        if ((cnt>0) & (cnt<MAX_DUMP_BUF))
+            os_write_file(fd,q,cnt);
+        cnt = snprintf(q,MAX_DUMP_BUF,"rppid=%d\n",tsk->real_parent->pid);
+        if ((cnt>0) & (cnt<MAX_DUMP_BUF))
+            os_write_file(fd,q,cnt);
+
+
         /* FIXME the MAGIC word is not escaped it could emerge as argument */
         cnt = snprintf(q,cnt,"DONE\n");
         if ((cnt >0) & (cnt < MAX_DUMP_BUF))
