@@ -72,6 +72,8 @@ long um_execve(char *file, char __user *__user *argv, char __user *__user *env)
 }
 
 /*
+ * Generate a "unique" file on the host operating system containing the
+ * file name and arguments that are dumped.
  * My uuid hack wuuuurgs, performance bye bye it is already gone with the
  * massive amount of IO
  *
@@ -85,11 +87,16 @@ int create_filename(char *fn, int size){
     asm volatile("rdtsc" : "=a" (a), "=d" (b));
     ncycles =  ((long long )a|(long long)b<<32);
     /* Return the length of the string, negative value on failure */
-    return snprintf(fn,size,"AHA_%lx.out",ncycles);
+    return snprintf(fn,size,"out/AHA_%lx.out",ncycles);
 }
 
 
 /*
+ * Tansfers the file names and arguments to the host OS
+ * The transfer via files is an good awfull solution.
+ * The dumping is done in a best effort manner. If it succeds
+ * to write all the data the tag / line DONE is at the end of the
+ * file
  * TODO need to extract PID and PPID?
  */
 void dump_execve(char __user *file, char __user *__user *argv,
@@ -103,11 +110,6 @@ void dump_execve(char __user *file, char __user *__user *argv,
     flg.w = 1;
     flg.c = 1;
     cnt = 0;
-      /*
-       * FIXME Disk access is an good awfull solution; UML can be put on a
-       * tmfs as mitigation
-       */
-
 
     p = kmalloc(MAX_DUMP_BUF,GFP_KERNEL);
     q = kmalloc(MAX_DUMP_BUF, GFP_KERNEL);
@@ -120,8 +122,7 @@ void dump_execve(char __user *file, char __user *__user *argv,
 
      /* Dump the file from execve */
         if (strncpy_from_user(p,file,MAX_DUMP_BUF) > 0){
-            cnt = snprintf((char*)q,MAX_DUMP_BUF,"AHA:execve>file=%s\n",p);
-            /* Best effort: If we manage to write ok if not it is also ok */
+            cnt = snprintf((char*)q,MAX_DUMP_BUF,"file=%s\n",p);
             if ((cnt>0) & (cnt < MAX_DUMP_BUF))
                 os_write_file(fd,q,cnt);
 
@@ -133,13 +134,14 @@ void dump_execve(char __user *file, char __user *__user *argv,
             if (!a)
                 break;
             if (strncpy_from_user(p,a, MAX_DUMP_BUF) > 0) {
-                cnt=snprintf(q,cnt,"AHA:argument=%s\n",p);
+                cnt=snprintf(q,MAX_DUMP_BUF,"argument=%s\n",p);
                 if ((cnt>0) & (cnt<MAX_DUMP_BUF))
                     os_write_file(fd,q,cnt);
 
             }
             argv++;
         }
+        /* FIXME the MAGIC word is not escaped it could emerge as argument */
         cnt = snprintf(q,cnt,"DONE\n");
         if ((cnt >0) & (cnt < MAX_DUMP_BUF))
             os_write_file(fd,q,cnt);
