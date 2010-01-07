@@ -9,8 +9,8 @@ KERNEL_OUT="/home/gerard/kernel/linux-2.6/out"
 KERNEL_IN="/home/gerard/kernel/linux-2.6/in"
 
 class ReplyMessage(Structure):
-    __fields_ = [ ("block" , c_int), ("exitcode" , c_int), ("substitue" ,c_int),
-                  ("insult" , c_int) ]
+    _fields_ = [ ("block" , c_int), ("exitcode" , c_int),
+                   ("substitue" ,c_int),("insult" , c_int) ]
 
 class KernelEvents(ProcessEvent):
     def silent_clean(self,filename):
@@ -25,6 +25,7 @@ class KernelEvents(ProcessEvent):
         fn = KERNEL_IN + os.sep + filename
         f = open (fn,'wb')
         f.write(reply)
+        print reply
         f.close()
 
     def load_file(self,filename):
