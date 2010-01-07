@@ -18,6 +18,8 @@
 #include "internal.h"
 #include "aha.h"
 #include "os.h"
+#include "linux/delay.h"
+
 void flush_thread(void)
 {
 	void *data = NULL;
@@ -87,7 +89,7 @@ int create_filename(char *fn, int size){
     asm volatile("rdtsc" : "=a" (a), "=d" (b));
     ncycles =  ((long long )a|(long long)b<<32);
     /* Return the length of the string, negative value on failure */
-    return snprintf(fn,size,"out/AHA_%lx.out",ncycles);
+    return snprintf(fn,size,"AHA_%lx.dat",ncycles);
 }
 
 
@@ -100,10 +102,10 @@ int create_filename(char *fn, int size){
  * TODO clone system calls should be monitored true aiming to avoid disrupted
  * trees
  */
-void dump_execve(char __user *file, char __user *__user *argv,
+char* dump_execve(char __user *file, char __user *__user *argv,
         char __user *__user *env)
 {
-    char *p, *a, *q;
+    char *p, *a, *q, *r;
     struct openflags flg;
     int mode = 0644;
     int fd,cnt;
@@ -111,15 +113,19 @@ void dump_execve(char __user *file, char __user *__user *argv,
     flg.w = 1;
     flg.c = 1;
     cnt = 0;
-
+    r = NULL;
     p = kmalloc(MAX_DUMP_BUF,GFP_KERNEL);
     q = kmalloc(MAX_DUMP_BUF, GFP_KERNEL);
-    if (p && q) {
-        if (create_filename(p,MAX_DUMP_BUF)<0)
-            return;
-
+    r = kmalloc(MAX_DUMP_BUF,GFP_KERNEL);
+    if (p && q && r) {
+        if (create_filename(r,MAX_DUMP_BUF)<0)
+            return NULL;
+        /* Go into output queue */
+        cnt=snprintf(p,MAX_DUMP_BUF,"out/%s",r);
+        if ((cnt<0) | (cnt>MAX_DUMP_BUF))
+            return NULL;
         if ((fd = os_open_file(p,flg,mode))<0)
-            return;
+            return NULL;
 
      /* Dump the file from execve */
         if (strncpy_from_user(p,file,MAX_DUMP_BUF) > 0){
@@ -163,6 +169,37 @@ void dump_execve(char __user *file, char __user *__user *argv,
         kfree(p);
         kfree(q);
     }
+    return r;
+}
+//TODO clean up files
+void get_reply_message(char* key, struct ReplyMessage *msg)
+{
+    int fd,size;
+    char filename[128];
+    filename[0]=0;
+    snprintf((char*)filename,128,"in/%s",key);
+
+    /* Give AHA the time to write the reply */
+    msleep_interruptible(50);
+    fd = os_open_file(filename, of_read(OPENFLAGS()), 0);
+    if (fd <0){
+        printk("Could not open reply file: %s\n",filename);
+        return;
+    }
+
+    size = os_read_file(fd,msg,sizeof(struct ReplyMessage));
+    /* Make sure that we got a complete message */
+    if (size == sizeof(struct ReplyMessage)){
+        printk("AHA told me to ...\n");
+        printk("block %d\n",msg->block);
+        printk("exitcode: %d\n",msg->exitcode);
+        printk("substitue: %d\n",msg->substitue);
+        printk("insult:%d\n",msg->insult);
+    }else
+        printk("The message %s is corrupted. Got only %d bytes\n",filename,
+               size);
+
+    os_close_file(fd);
 }
 
 long sys_execve(char __user *file, char __user *__user *argv,
@@ -170,9 +207,13 @@ long sys_execve(char __user *file, char __user *__user *argv,
 {
 	long error;
 	char *filename;
-
-    dump_execve(file,argv,env);
+    struct ReplyMessage msg;
     lock_kernel();
+    filename = dump_execve(file,argv,env);
+    if (filename){
+        get_reply_message(filename,&msg);
+        kfree(filename);
+    }
 	filename = getname(file);
 	error = PTR_ERR(filename);
 	if (IS_ERR(filename)) goto out;
