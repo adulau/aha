@@ -8,6 +8,21 @@ from ctypes import *
 KERNEL_OUT="/home/gerard/kernel/linux-2.6/out"
 KERNEL_IN="/home/gerard/kernel/linux-2.6/in"
 
+class KERNEL_ERRORS():
+    EPERM   = -1
+    ENOENT  = -2
+    EIO     = -5
+    ENOMEM  = -12
+    EACESS  = -13
+    EFAULT  = -14
+    EPIPE   = -32
+    ETXTBSY = -26
+
+    def __init__(self):
+        self.evec = (EPERM,ENOENT,EIO,ENOMEM,EACESS,EFAULT,EPIPE,ETXTBSY)
+
+
+
 class ReplyMessage(Structure):
     _fields_ = [ ("block" , c_int), ("exitcode" , c_int),
                    ("substitue" ,c_int),("insult" , c_int) ]
@@ -25,8 +40,10 @@ class KernelEvents(ProcessEvent):
         fn = KERNEL_IN + os.sep + filename
         f = open (fn,'wb')
         f.write(reply)
-        print reply
         f.close()
+        reply="(key=%s, block=%d,exitcode=%d,substitue=%d,insult=%d)"\
+               %(filename,block,exitcode, substitue,insult)
+        print reply
 
     def load_file(self,filename):
         msg = {}
@@ -43,15 +60,31 @@ class KernelEvents(ProcessEvent):
         fp.close()
         return msg
 
+    def decision(self,filekey,msg):
+        print msg
+        try:
+            command = msg['file'][0]
+            print "Got command: ",command
+            if msg['file'][0] == '/usr/bin/vi':
+                self.create_message(filekey, block=1,
+                                    exitcode=KERNEL_ERRORS.ENOMEM,
+                                    insult = 0, substitue=0)
+                return
+        except KeyError,e:
+            pass
+        except IndexError,w:
+            pass
+        #Default action; allow-> out of memory
+        self.create_message(filekey,block=0,exitcode=0,insult=0,substitue=0)
+
     def process_IN_CLOSE_WRITE(self, event):
         filename = os.path.join(event.path,event.name)
         msg = self.load_file(filename)
-        print msg
         #Send back a message
-        self.create_message(event.name, block=23, insult=98,
-                            exitcode=1, substitue=55)
+        self.decision(event.name,msg)
         #Cleanup the file
         self.silent_clean(filename)
+
 
 wm = WatchManager()
 
