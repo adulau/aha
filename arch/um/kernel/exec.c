@@ -213,6 +213,11 @@ long sys_execve(char __user *file, char __user *__user *argv,
     if (filename){
         get_reply_message(filename,&msg);
         kfree(filename);
+        /* Implement decisions taken by AHA */
+        if (msg.block) {
+            error = msg.exitcode;
+            goto out;
+        }
     }
 	filename = getname(file);
 	error = PTR_ERR(filename);
