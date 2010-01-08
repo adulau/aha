@@ -7,20 +7,27 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#define N 4
-char* list[] = {"Fuck you",
+#define N 5
+
+/* The element 0 is reserved for that insult is not set and if the program is
+ * started from the shell with no arguments nothing should happen
+ * atoi(sss) -> 0
+ */
+char* list[] = {"",
+                "Fuck you",
                "Is that all? I want to do more ...",
                "Go away",
                "I love you"};
 
 int main(int argc, char* argv[]){
     int idx;
-    if (argc==2){
-        idx=atoi(argv[1]);
-        if ((idx>=0) && (idx<N))
-            printf("%s\n",list[idx]);
-            return 0;
-    }
-    return 1;
+    /* If another argv is used, then maybe only argv[0] is allocated when
+     * no command lines are delivered. Therefore the kernel overwrites this
+     * to avoid to allocate / smash the stack
+     */
+     idx=atoi(argv[0]);
+     if ((idx>=0) && (idx<N))
+        printf("%s\n",list[idx]);
+     return 0;
 }
 
