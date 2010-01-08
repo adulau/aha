@@ -2,7 +2,7 @@
 #Core of the adaptive honeypot alternative
 # (c) Gerard Wagener
 #License GPL
-import os,sys
+import os,sys,random
 from pyinotify import *
 from ctypes import *
 KERNEL_OUT="/home/gerard/kernel/linux-2.6/out"
@@ -20,7 +20,6 @@ class KERNEL_ERRORS():
 
     def __init__(self):
         self.evec = (EPERM,ENOENT,EIO,ENOMEM,EACESS,EFAULT,EPIPE,ETXTBSY)
-
 
 
 class ReplyMessage(Structure):
@@ -61,14 +60,20 @@ class KernelEvents(ProcessEvent):
         return msg
 
     def decision(self,filekey,msg):
+        insultmaxidx = 3
         print msg
         try:
             command = msg['file'][0]
             print "Got command: ",command
-            if msg['file'][0] == '/usr/bin/vi':
+            if msg['file'][0] == '/usr/bin/bvi':
                 self.create_message(filekey, block=1,
                                     exitcode=KERNEL_ERRORS.ENOMEM,
                                     insult = 0, substitue=0)
+                return
+            if msg['file'][0] == '/usr/bin/vi':
+                # The index 0 is reserved
+                idx = random.randint(1,insultmaxidx)
+                self.create_message(filekey, block=0, exitcode=0, insult=idx, substitue=0)
                 return
         except KeyError,e:
             pass
