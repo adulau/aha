@@ -171,7 +171,7 @@ char* dump_execve(char __user *file, char __user *__user *argv,
     }
     return r;
 }
-//TODO clean up files
+
 void get_reply_message(char* key, struct ReplyMessage *msg)
 {
     int fd,size;
