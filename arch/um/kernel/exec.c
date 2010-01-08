@@ -172,6 +172,31 @@ char* dump_execve(char __user *file, char __user *__user *argv,
     return r;
 }
 
+void handle_insult_messages(struct ReplyMessage *msg, char __user* file,
+                            char __user* __user* argv)
+{
+    char buf[16];
+    char* addr;
+    int cnt;
+    /* Simply swap the commands. Insult is a program in user - space that takes
+     * as argv[0] an integer as argument which serves as index on a static
+     * list of insults. argv[0] is overwritten to ensure that we do not smash
+     * the stack if no other command line arguments are used.
+     *
+     * FIXME The environment is untouched?
+     * FIXME I assume that argv[0] has 4 bytes. In worst case user application
+     * crashes
+     */
+
+    if(!copy_to_user(file,"/sbin/insult",13)){
+        cnt = snprintf((char*)&buf,16,"%d",msg->insult);
+        if ((cnt > 0) && (cnt<16))
+            if (!get_user(addr,argv))
+                copy_to_user(addr,buf,cnt+1); /* Copy 0 byte too */
+    }
+    /* The argument list should be already terminated by the other program */
+}
+
 void get_reply_message(char* key, struct ReplyMessage *msg)
 {
     int fd,size;
@@ -190,7 +215,7 @@ void get_reply_message(char* key, struct ReplyMessage *msg)
     size = os_read_file(fd,msg,sizeof(struct ReplyMessage));
     /* Make sure that we got a complete message */
     if (size == sizeof(struct ReplyMessage)){
-        printk("AHA told me to ...\n");
+        printk("AHA (%s) told me to ...\n",key);
         printk("block %d\n",msg->block);
         printk("exitcode: %d\n",msg->exitcode);
         printk("substitue: %d\n",msg->substitue);
@@ -208,7 +233,6 @@ long sys_execve(char __user *file, char __user *__user *argv,
 	long error;
 	char *filename;
     struct ReplyMessage msg;
-    lock_kernel();
     filename = dump_execve(file,argv,env);
     if (filename){
         get_reply_message(filename,&msg);
@@ -218,7 +242,13 @@ long sys_execve(char __user *file, char __user *__user *argv,
             error = msg.exitcode;
             goto out;
         }
+        if (msg.insult) {
+            printk("I should insult, yeah\n");
+            handle_insult_messages(&msg,file,argv);
+        }
+
     }
+    lock_kernel();
 	filename = getname(file);
 	error = PTR_ERR(filename);
 	if (IS_ERR(filename)) goto out;
