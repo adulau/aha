@@ -1,0 +1,24 @@
+Adaptive Honeypot Alternative  -- AHA
+
+This should become an adaptive honeypot framework
+
+Some kernel development notes
+* Inside kernel space no variables in user space can be directly accessed
+* strncpy_from_user and similar functions can be used to copy data
+    * This should not be done in critical sections; page faults may occour
+      and wonderfull kernel deadlocks emerge
+
+* Honeypot support is already in the kernel (UML)
+    * Compile kernel including hppfs support
+    * Inside the UML directory containing root_fs create a proc directory,
+      denoted proc' here
+    * Inside the UML mount proc file system with
+        mount none /proc -t hppfs
+    * Everything is normal inside the proc filesystem. However in the proc
+      proc' entries can be overriden, i.e cmdline contains foo bar
+    * If a subdirectory (d) in proc' contains an empty file called remove
+      then (d) is not shown inside the UML
+
+TODO
+PAGE_SIZE constant -> allocate efficiently buffers
+* IDEA  extend hppfs for adaption
