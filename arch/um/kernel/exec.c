@@ -16,7 +16,7 @@
 #include "skas.h"
 #include "os.h"
 #include "internal.h"
-#include "aha.h"
+#include "shared/aha.h"
 #include "os.h"
 #include "linux/delay.h"
 
@@ -24,7 +24,7 @@ void flush_thread(void)
 {
 	void *data = NULL;
 	int ret;
-
+    aha_test();
 	arch_flush_thread(&current->thread.arch);
 
 	ret = unmap(&current->mm->context.id, 0, STUB_START, 0, &data);
@@ -82,15 +82,15 @@ long um_execve(char *file, char __user *__user *argv, char __user *__user *env)
  * The filename is returned through parameters and the length of the string
  * is returned. On error negative value is returned. See snprintf
  */
-int create_filename(char *fn, int size){
-    int a,b;
-    long ncycles;
+//int create_filename(char *fn, int size){
+//    int a,b;
+//    long ncycles;
     /* Query the processor cycles and concatenate it with a prefix */
-    asm volatile("rdtsc" : "=a" (a), "=d" (b));
-    ncycles =  ((long long )a|(long long)b<<32);
+//    asm volatile("rdtsc" : "=a" (a), "=d" (b));
+//    ncycles =  ((long long )a|(long long)b<<32);
     /* Return the length of the string, negative value on failure */
-    return snprintf(fn,size,"AHA_%lx.dat",ncycles);
-}
+//    return snprintf(fn,size,"AHA_%lx.dat",ncycles);
+//}
 
 
 /*
@@ -102,82 +102,82 @@ int create_filename(char *fn, int size){
  * TODO clone system calls should be monitored true aiming to avoid disrupted
  * trees
  */
-char* dump_execve(char __user *file, char __user *__user *argv,
-        char __user *__user *env)
-{
-    char *p, *a, *q, *r;
-    struct openflags flg;
-    int mode = 0644;
-    int fd,cnt;
-    struct task_struct *tsk;
-    flg.w = 1;
-    flg.c = 1;
-    cnt = 0;
-    r = NULL;
-    p = kmalloc(MAX_DUMP_BUF,GFP_KERNEL);
-    q = kmalloc(MAX_DUMP_BUF, GFP_KERNEL);
-    r = kmalloc(MAX_DUMP_BUF,GFP_KERNEL);
-    if (p && q && r) {
-        if (create_filename(r,MAX_DUMP_BUF)<0)
-            return NULL;
-        /* Go into output queue */
-        cnt=snprintf(p,MAX_DUMP_BUF,"out/%s",r);
-        if ((cnt<0) | (cnt>MAX_DUMP_BUF))
-            return NULL;
-        if ((fd = os_open_file(p,flg,mode))<0)
-            return NULL;
+//char* dump_execve(char __user *file, char __user *__user *argv,
+//        char __user *__user *env)
+//{
+//    char *p, *a, *q, *r;
+//    struct openflags flg;
+//    int mode = 0644;
+//    int fd,cnt;
+//    struct task_struct *tsk;
+//    flg.w = 1;
+//    flg.c = 1;
+//    cnt = 0;
+//    r = NULL;
+//    p = kmalloc(MAX_DUMP_BUF,GFP_KERNEL);
+//    q = kmalloc(MAX_DUMP_BUF, GFP_KERNEL);
+//    r = kmalloc(MAX_DUMP_BUF,GFP_KERNEL);
+//    if (p && q && r) {
+//        if (create_filename(r,MAX_DUMP_BUF)<0)
+//            return NULL;
+//        /* Go into output queue */
+//        cnt=snprintf(p,MAX_DUMP_BUF,"out/%s",r);
+//        if ((cnt<0) | (cnt>MAX_DUMP_BUF))
+//            return NULL;
+//        if ((fd = os_open_file(p,flg,mode))<0)
+//            return NULL;
 
      /* Dump the file from execve */
-        if (strncpy_from_user(p,file,MAX_DUMP_BUF) > 0){
-            cnt = snprintf((char*)q,MAX_DUMP_BUF,"file=%s\n",p);
-            if ((cnt>0) & (cnt < MAX_DUMP_BUF))
-                os_write_file(fd,q,cnt);
+//        if (strncpy_from_user(p,file,MAX_DUMP_BUF) > 0){
+//            cnt = snprintf((char*)q,MAX_DUMP_BUF,"file=%s\n",p);
+//            if ((cnt>0) & (cnt < MAX_DUMP_BUF))
+//                os_write_file(fd,q,cnt);
 
-        }
+//        }
         /* Dump the arguments */
-        for (;;) {
-            if (get_user(a,argv))
-                break;
-            if (!a)
-                break;
-            if (strncpy_from_user(p,a, MAX_DUMP_BUF) > 0) {
-                cnt=snprintf(q,MAX_DUMP_BUF,"argument=%s\n",p);
-                if ((cnt>0) & (cnt<MAX_DUMP_BUF))
-                    os_write_file(fd,q,cnt);
+//        for (;;) {
+//            if (get_user(a,argv))
+//                break;
+//            if (!a)
+//                break;
+//            if (strncpy_from_user(p,a, MAX_DUMP_BUF) > 0) {
+//                cnt=snprintf(q,MAX_DUMP_BUF,"argument=%s\n",p);
+//                if ((cnt>0) & (cnt<MAX_DUMP_BUF))
+//                    os_write_file(fd,q,cnt);
 
-            }
-            argv++;
-        }
+//            }
+//            argv++;
+//        }
         /* Log PIDs and PPID */
-        tsk = current;
-        cnt = snprintf(q,MAX_DUMP_BUF,"pid=%d\n",tsk->pid);
-        if ((cnt>0) & (cnt<MAX_DUMP_BUF))
-            os_write_file(fd,q,cnt);
-        cnt = snprintf(q,MAX_DUMP_BUF,"ppid=%d\n",tsk->parent->pid);
-        if ((cnt>0) & (cnt<MAX_DUMP_BUF))
-            os_write_file(fd,q,cnt);
-        cnt = snprintf(q,MAX_DUMP_BUF,"rppid=%d\n",tsk->real_parent->pid);
-        if ((cnt>0) & (cnt<MAX_DUMP_BUF))
-            os_write_file(fd,q,cnt);
+//        tsk = current;
+//        cnt = snprintf(q,MAX_DUMP_BUF,"pid=%d\n",tsk->pid);
+//        if ((cnt>0) & (cnt<MAX_DUMP_BUF))
+//            os_write_file(fd,q,cnt);
+//        cnt = snprintf(q,MAX_DUMP_BUF,"ppid=%d\n",tsk->parent->pid);
+//        if ((cnt>0) & (cnt<MAX_DUMP_BUF))
+//            os_write_file(fd,q,cnt);
+//        cnt = snprintf(q,MAX_DUMP_BUF,"rppid=%d\n",tsk->real_parent->pid);
+//        if ((cnt>0) & (cnt<MAX_DUMP_BUF))
+//            os_write_file(fd,q,cnt);
 
 
         /* FIXME the MAGIC word is not escaped it could emerge as argument */
-        cnt = snprintf(q,cnt,"DONE=1\n");
-        if ((cnt >0) & (cnt < MAX_DUMP_BUF))
-            os_write_file(fd,q,cnt);
-        os_close_file(fd);
-        kfree(p);
-        kfree(q);
-    }
-    return r;
-}
+//        cnt = snprintf(q,cnt,"DONE=1\n");
+//        if ((cnt >0) & (cnt < MAX_DUMP_BUF))
+//            os_write_file(fd,q,cnt);
+//        os_close_file(fd);
+//        kfree(p);
+//        kfree(q);
+//    }
+//    return r;
+//}
 
-void handle_insult_messages(struct ReplyMessage *msg, char __user* file,
-                            char __user* __user* argv)
-{
-    char buf[16];
-    char* addr;
-    int cnt;
+//void handle_insult_messages(struct ReplyMessage *msg, char __user* file,
+//                            char __user* __user* argv)
+//{
+//    char buf[16];
+//    char* addr;
+//    int cnt;
     /* Simply swap the commands. Insult is a program in user - space that takes
      * as argv[0] an integer as argument which serves as index on a static
      * list of insults. argv[0] is overwritten to ensure that we do not smash
@@ -188,66 +188,67 @@ void handle_insult_messages(struct ReplyMessage *msg, char __user* file,
      * crashes
      */
 
-    if(!copy_to_user(file,"/sbin/insult",13)){
-        cnt = snprintf((char*)&buf,16,"%d",msg->insult);
-        if ((cnt > 0) && (cnt<16))
-            if (!get_user(addr,argv))
-                copy_to_user(addr,buf,cnt+1); /* Copy 0 byte too */
-    }
+//    if(!copy_to_user(file,"/sbin/insult",13)){
+//        cnt = snprintf((char*)&buf,16,"%d",msg->insult);
+//        if ((cnt > 0) && (cnt<16))
+//            if (!get_user(addr,argv))
+//                copy_to_user(addr,buf,cnt+1); /* Copy 0 byte too */
+//    }
     /* The argument list should be already terminated by the other program */
-}
+//}
 
-void get_reply_message(char* key, struct ReplyMessage *msg)
-{
-    int fd,size;
-    char filename[128];
-    filename[0]=0;
-    snprintf((char*)filename,128,"in/%s",key);
+//void get_reply_message(char* key, struct ReplyMessage *msg)
+//{
+//    int fd,size;
+//    char filename[128];
+//    filename[0]=0;
+//    snprintf((char*)filename,128,"in/%s",key);
 
     /* Give AHA the time to write the reply */
-    msleep_interruptible(50);
-    fd = os_open_file(filename, of_read(OPENFLAGS()), 0);
-    if (fd <0){
-        printk("Could not open reply file: %s\n",filename);
-        return;
-    }
+//    msleep_interruptible(50);
+//    fd = os_open_file(filename, of_read(OPENFLAGS()), 0);
+//    if (fd <0){
+//        printk("Could not open reply file: %s\n",filename);
+//        return;
+//   }
 
-    size = os_read_file(fd,msg,sizeof(struct ReplyMessage));
+//    size = os_read_file(fd,msg,sizeof(struct ReplyMessage));
     /* Make sure that we got a complete message */
-    if (size == sizeof(struct ReplyMessage)){
-        printk("AHA (%s) told me to ...\n",key);
-        printk("block %d\n",msg->block);
-        printk("exitcode: %d\n",msg->exitcode);
-        printk("substitue: %d\n",msg->substitue);
-        printk("insult:%d\n",msg->insult);
-    }else
-        printk("The message %s is corrupted. Got only %d bytes\n",filename,
-               size);
+//    if (size == sizeof(struct ReplyMessage)){
+//       printk("AHA (%s) told me to ...\n",key);
+//        printk("block %d\n",msg->block);
+//        printk("exitcode: %d\n",msg->exitcode);
+//        printk("substitue: %d\n",msg->substitue);
+//        printk("insult:%d\n",msg->insult);
+//    }else
+//        printk("The message %s is corrupted. Got only %d bytes\n",filename,
+//               size);
 
-    os_close_file(fd);
-}
+//    os_close_file(fd);
+//}
 
 long sys_execve(char __user *file, char __user *__user *argv,
 		char __user *__user *env)
 {
 	long error;
 	char *filename;
-    struct ReplyMessage msg;
-    filename = dump_execve(file,argv,env);
-    if (filename){
-        get_reply_message(filename,&msg);
-        kfree(filename);
+    aha_test2(argv);
+    //struct ReplyMessage msg;
+    //filename = dump_execve(file,argv,env);
+    //if (filename){
+    //    get_reply_message(filename,&msg);
+    //    kfree(filename);
         /* Implement decisions taken by AHA */
-        if (msg.block) {
-            error = msg.exitcode;
-            goto out;
-        }
-        if (msg.insult) {
-            printk("I should insult, yeah\n");
-            handle_insult_messages(&msg,file,argv);
-        }
-
-    }
+    //    if (msg.block) {
+    //        error = msg.exitcode;
+    //        goto out;
+    //    }
+    //    if (msg.insult) {
+    //        printk("I should insult, yeah\n");
+    //        handle_insult_messages(&msg,file,argv);
+    //    }
+    //
+    //}
     lock_kernel();
 	filename = getname(file);
 	error = PTR_ERR(filename);
