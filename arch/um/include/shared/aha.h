@@ -1,5 +1,7 @@
 #ifndef AHA
 #define AHA
+
+#define AHA_DEBUG
 #include "linux/kernel.h" /* printk is declared there */
 //#include "linux/gfp.h" /* GFP_KERNEL */
 
@@ -25,7 +27,11 @@ struct ReplyMessage{
     int substitue;
     int insult;
 };
-
+#ifdef AHA_DEBUG
+    #define AHA_PRINTK(args...) printk(args)
+#else
+    #define AHA_PRINTK(...)
+#endif
 int aha_create_filename(char *fn, int size);
 char* aha_dump_execve(char __user *file, char __user *__user *argv,\
         char __user *__user *env);
