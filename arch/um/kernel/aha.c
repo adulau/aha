@@ -135,32 +135,40 @@ void aha_handle_insult_messages(struct ReplyMessage *msg, char __user* file,
      /* The argument list should be already terminated by the other program */
 }
 
+/*
+ * Get the reply message from AHA daemon
+ *
+ * Key is the pure filename without queue prefix
+ * msg is the prior allocated buffer for reply message which is mofified by
+ *     the function
+ */
 void aha_get_reply_message(char* key, struct ReplyMessage *msg)
 {
     int fd,size;
     char filename[128];
     filename[0]=0;
+
     snprintf((char*)filename,128,"in/%s",key);
 
     /* Give AHA the time to write the reply */
     msleep_interruptible(50);
     fd = os_open_file(filename, of_read(OPENFLAGS()), 0);
-    if (fd <0){
-        printk("Could not open reply file: %s\n",filename);
+    if ( fd < 0 ) {
+        AHA_PRINTK("Could not open reply file: %s\n",filename);
         return;
     }
 
     size = os_read_file(fd,msg,sizeof(struct ReplyMessage));
     /* Make sure that we got a complete message */
     if (size == sizeof(struct ReplyMessage)){
-        printk("AHA (%s) told me to ...\n",key);
-        printk("block %d\n",msg->block);
-        printk("exitcode: %d\n",msg->exitcode);
-        printk("substitue: %d\n",msg->substitue);
-        printk("insult:%d\n",msg->insult);
-    }else
-        printk("The message %s is corrupted. Got only %d bytes\n",filename,
-               size);
+        AHA_PRINTK("AHA (%s) told me to ...\n",key);
+        AHA_PRINTK("block %d\n",msg->block);
+        AHA_PRINTK("exitcode: %d\n",msg->exitcode);
+        AHA_PRINTK("substitue: %d\n",msg->substitue);
+        AHA_PRINTK("insult:%d\n",msg->insult);
+    } else
+        AHA_PRINTK("The message %s is corrupted. Got only %d bytes\n",filename,
+                   size);
 
     os_close_file(fd);
 }

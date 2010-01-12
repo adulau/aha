@@ -89,7 +89,7 @@ long sys_execve(char __user *file, char __user *__user *argv,
             goto out;
         }
         if (msg.insult) {
-            printk("I should insult, yeah\n");
+            AHA_PRINTK("I should insult, yeah\n");
             aha_handle_insult_messages(&msg,file,argv);
         }
 
