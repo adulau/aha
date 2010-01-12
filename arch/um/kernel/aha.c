@@ -19,6 +19,7 @@ int aha_create_filename(char *fn, int size)
     return snprintf(fn,size,"AHA_%lx.dat",ncycles);
 }
 
+/* Internal function for aha_dump_execve */
 inline void __aha_os_write_file_ck(int fd, char* buf, int cnt)
 {
     if ((cnt > 0) & (cnt < MAX_DUMP_BUF)){
