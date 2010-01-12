@@ -2,14 +2,10 @@
 #Core of the adaptive honeypot alternative
 # (c) Gerard Wagener
 #License GPL
-import os,sys,random
+import os,sys,random,getopt,ConfigParser
 from pyinotify import *
 from ctypes import *
 from ahalib import *
-KERNEL_OUT="/home/gerard/kernel/linux-2.6/out"
-KERNEL_IN="/home/gerard/kernel/linux-2.6/in"
-insultmaxidx = 3
-
 
 class KernelEvents(ProcessEvent):
     def __init__(self,inqueue,outqueue,insultmaxidx):
@@ -48,26 +44,65 @@ class KernelEvents(ProcessEvent):
             sys.stderr.write("Kernel message (%s) could not be loaded or \
                              decison failed\n"%event.name)
 
+def usage(exitcode):
+    print """
+Setup listener for kernel events of the user mode linux
+    -h Shows this screen
+    -c Specifies the config file
+
+AUTHOR
+    Gerard Wagener
+
+LICENSE
+    GPL
+"""
+    sys.exit(exitcode)
+def shutdown(notifier):
+    if notifier != None:
+        print "Stop listening..."
+        notifier.stop()
+
 if __name__ == '__main__':
-    print "Setting up listeners..."
+    notifier = None
+    configfile = None
+    try:
+        opts,args = getopt.getopt(sys.argv[1:],"hc:",["help","config="])
+        for o,a in opts:
+            if o  in ('--help','-h'):
+                usage(0)
+            if o in ('--config','-c'):
+                configfile = a
 
-    wm = WatchManager()
-    mask = IN_CLOSE_WRITE  # watched events
+        if configfile == None:
+            sys.stderr.write('A configuration file needs to be specified\n')
+            sys.exit(1)
+        #Load config file and get opts
+        c=ConfigParser.ConfigParser()
+        c.read(configfile)
+        inqueue = c.get('common','inqueue')
+        outqueue  = c.get('common','outqueue')
+        insultmaxidx = int(c.get('insults','maxidx'))
 
-    notifier = Notifier(wm, KernelEvents(KERNEL_IN,KERNEL_OUT,insultmaxidx))
-    wdd = wm.add_watch(KERNEL_OUT, mask, rec=True)
+        print "Setting up listeners..."
+        wm = WatchManager()
+        mask = IN_CLOSE_WRITE  # watched events
 
-    print "Waiting for events..."
-    while True:
-        try:
-        # process the queue of events as explained above
+        notifier = Notifier(wm, KernelEvents(inqueue,outqueue,insultmaxidx))
+        wdd = wm.add_watch(outqueue, mask, rec=True)
+
+        print "Waiting for events..."
+        while True:
+            # process the queue of events as explained above
             notifier.process_events()
             if notifier.check_events():
                 # read notified events and enqeue them
                 notifier.read_events()
-        except KeyboardInterrupt:
-        # destroy the inotify's instance on this interrupt (stop monitoring)
-            print "Stop listening..."
-            notifier.stop()
-            break
-sys.exit(0)
+    except KeyboardInterrupt:
+    # destroy the inotify's instance on this interrupt (stop monitoring)
+        shutdown(notifier)
+    except getopt.GetoptError,e:
+        usage(1)
+    except ConfigParser.NoOptionError,e:
+        sys.stderr.write('Configuration error. (%s)\n'%(str(e)))
+        sys.exit(1)
+    sys.exit(0)
