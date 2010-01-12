@@ -14,7 +14,7 @@
 #include "asm/uaccess.h"
 #include "asm/unistd.h"
 #include "internal.h"
-
+//TODO Analyze this function
 long sys_fork(void)
 {
 	long ret;
@@ -26,6 +26,7 @@ long sys_fork(void)
 	return ret;
 }
 
+//TODO analyze this function
 long sys_vfork(void)
 {
 	long ret;
