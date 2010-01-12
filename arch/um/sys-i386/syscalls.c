@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2000 - 2003 Jeff Dike (jdike@addtoit.com)
  * Licensed under the GPL
  */
@@ -81,6 +81,7 @@ long sys_clone(unsigned long clone_flags, unsigned long newsp,
 	current->thread.forking = 1;
 	ret = do_fork(clone_flags, newsp, &current->thread.regs, 0, parent_tid,
 		      child_tid);
+    printk("Process %d created %d\n",current->pid,ret);
 	current->thread.forking = 0;
 	return ret;
 }
