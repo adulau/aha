@@ -209,7 +209,6 @@ void aha_record_sys_clone(int pid, int ppid)
 
     aha_create_filename((char*)&filename,filename__size);
     snprintf((char*)&buf, buf__size,"out/%s",filename);
-    printk("filename: %s\n",filename);
     fd = os_open_file(buf,flg,mode);
     if (fd > 0){
         __aha_set_type_tag(fd,(char*)&buf,buf__size,CLONE_MESSAGE);
