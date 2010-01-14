@@ -71,12 +71,12 @@ class PeriodTaks():
         try:
             if type == PeriodTaks.FROM_KERNEL:
                 msg = self.aha.load_file(filename)
-                logEntry = self.aha.serializeKernelMessage(msg,ctime)
+                logEntry = self.aha.serializeKernelMessage(msg,filename,ctime)
                 self.lfd.write(logEntry)
 
             if type == PeriodTaks.TO_KERNEL:
                 msg = self.aha.get_kernel_reply(filename)
-                logEntry=self.aha.serializeAhaReply(msg,ctime)
+                logEntry=self.aha.serializeAhaReply(msg,filename,ctime)
                 self.lfd.write(logEntry)
         except IOError,e:
             sys.stderr.write('Failed to record message: %s\n'%filename)

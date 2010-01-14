@@ -48,14 +48,15 @@ class AHAActions:
 
     #Takes a parses kernel message as input and returns a serialized string
     #that can be put in a log file
-    def serializeKernelMessage(self,msg,ctime):
+    def serializeKernelMessage(self,msg,filename,ctime):
         data = json.dumps(msg)
         obj=datetime.datetime.fromtimestamp(ctime)
+        fn = os.path.basename(filename)
         #FIXME aaargg timestamps are a mess in python
         #Use str() which is not portable, but I do not want to spend hours
         #of this shit
         sd = str(obj)
-        return "%s|%s\n"%(sd,data);
+        return "%s|%s|%s\n"%(sd,fn,data);
 
     #Can throw IOError
     #FIXME not tested
@@ -69,11 +70,11 @@ class AHAActions:
 
     #FIXME not tested
     #Take a message read from get_kernel_reply function and return a string representation
-    def serializeAhaReply(self,m,ctime):
+    def serializeAhaReply(self,m,filename,ctime):
         #Create generic hash. Structure may change
         msg= {'block':m.block,'exitcode':m.exitcode,'substitue':m.substitue,'insult':m.insult};
         #kernel message is also a generic hash table; reuse it
-        return self.serializeKernelMessage(msg,ctime)
+        return self.serializeKernelMessage(msg,filename,ctime)
 
 class KERNEL_ERRORS():
     EPERM   = -1
