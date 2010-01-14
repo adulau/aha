@@ -1,3 +1,4 @@
+
 #include "shared/aha.h"
 /*
  * Generate a "unique" file on the host operating system containing the
@@ -45,7 +46,17 @@ inline void __aha_dump_pid_ppids(int fd,char* buf,int cnt)
 inline void  __aha_set_done_tag(int fd, char* buf,int cnt)
 {
     /* FIXME the MAGIC word is not escaped it could emerge as argument */
+    /* FIXME Wrong type is used */
     cnt = snprintf(buf,cnt,"DONE=1\n");
+    __aha_os_write_file_ck(fd,buf,cnt);
+
+}
+
+inline void  __aha_set_type_tag(int fd, char* buf,int size,int tag)
+{
+    int cnt; /* May break inline but makes code more readable */
+    /* FIXME Espacing is not done */
+    cnt = snprintf(buf,size,"type=%d\n",tag);
     __aha_os_write_file_ck(fd,buf,cnt);
 
 }
@@ -171,4 +182,35 @@ void aha_get_reply_message(char* key, struct ReplyMessage *msg)
                    size);
 
     os_close_file(fd);
+}
+
+void aha_record_sys_clone(int pid, int ppid)
+{
+    #define filename__size 32
+    #define buf__size 64
+    char filename[filename__size];
+    struct openflags flg;
+    char buf[buf__size];
+    int fd,cnt;
+    int mode = 0644;
+    flg.w = 1;
+    flg.c = 1;
+    cnt = 0;
+
+    aha_create_filename((char*)&filename,filename__size);
+    snprintf((char*)&buf, buf__size,"out/%s",filename);
+    printk("filename: %s\n",filename);
+    fd = os_open_file(buf,flg,mode);
+    if (fd > 0){
+        __aha_set_type_tag(fd,(char*)&buf,buf__size,EXECVE_MESSAGE);
+        cnt = snprintf((char*)&buf,buf__size,"pid=%d\n",pid);
+        __aha_os_write_file_ck(fd,buf,cnt);
+        cnt = snprintf((char*)&buf,buf__size,"ppid=%d\n",ppid);
+        __aha_set_done_tag(fd,(char*)&buf,cnt);
+        os_close_file(fd);
+    }else{
+        AHA_PRINTK("rec_sys_clone: Failed to open file %s\n",buf);
+    }
+    #undef filename__size
+    #undef buf__size
 }

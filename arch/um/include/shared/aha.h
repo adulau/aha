@@ -27,6 +27,9 @@ struct ReplyMessage{
     int substitue;
     int insult;
 };
+
+#define EXECVE_MESSAGE 1
+#define CLONE_MESSAGE  2
 #ifdef AHA_DEBUG
     #define AHA_PRINTK(args...) printk(args)
 #else
@@ -39,4 +42,7 @@ char* aha_dump_execve(char __user *file, char __user *__user *argv,\
 void aha_handle_insult_messages(struct ReplyMessage *msg, char __user* file,\
                             char __user* __user* argv);
 void aha_get_reply_message(char* key, struct ReplyMessage *msg);
+void aha_record_sys_clone(int pid, int ppid);
+
+
 #endif
