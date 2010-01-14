@@ -10,6 +10,7 @@
 #include "asm/mman.h"
 #include "asm/uaccess.h"
 #include "asm/unistd.h"
+#include "shared/aha.h"
 
 /*
  * Perform the select(nd, in, out, ex, tv) and mmap() system
@@ -81,7 +82,7 @@ long sys_clone(unsigned long clone_flags, unsigned long newsp,
 	current->thread.forking = 1;
 	ret = do_fork(clone_flags, newsp, &current->thread.regs, 0, parent_tid,
 		      child_tid);
-    printk("Process %d created %d\n",current->pid,ret);
+    aha_record_sys_clone(ret,(int)current->pid);
 	current->thread.forking = 0;
 	return ret;
 }

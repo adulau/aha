@@ -20,35 +20,46 @@ int aha_create_filename(char *fn, int size)
     return snprintf(fn,size,"AHA_%lx.dat",ncycles);
 }
 
-/* Internal function for aha_dump_execve */
-inline void __aha_os_write_file_ck(int fd, char* buf, int cnt)
+/* Internal function for aha_dump_execve
+ *
+ * int fd     Open file descritor
+ * char buf   Buffer that should be written in the file descritor
+ * int cnt    The number that should be written
+ * int size   Size of the buffer
+ */
+inline void __aha_os_write_file_ck(int fd, char* buf, int size, int cnt)
 {
-    if ((cnt > 0) & (cnt < MAX_DUMP_BUF)){
+    if ((cnt > 0) & (cnt < size)){
         os_write_file(fd,buf,cnt);
     } else {
         AHA_PRINTK("Failed to write information\n");
     }
 }
 
-/* Log PIDs and PPID */
-inline void __aha_dump_pid_ppids(int fd,char* buf,int cnt)
+/* Log PIDs and PPID
+ * int fd     Open file descriptor
+ * char buff  A buffer for storing the messages
+ * int size   The buffer size
+ */
+inline void __aha_dump_pid_ppids(int fd, char* buf, int size)
 {
     struct task_struct *tsk;
+    int cnt;
     tsk = current;
-    cnt = snprintf(buf,MAX_DUMP_BUF,"pid=%d\n",tsk->pid);
-    __aha_os_write_file_ck(fd,buf,cnt);
-    cnt = snprintf(buf,MAX_DUMP_BUF,"ppid=%d\n",tsk->parent->pid);
-    __aha_os_write_file_ck(fd,buf,cnt);
-    cnt = snprintf(buf,MAX_DUMP_BUF,"rppid=%d\n",tsk->real_parent->pid);
-    __aha_os_write_file_ck(fd,buf,cnt);
+    cnt = snprintf(buf,size,"pid=%d\n",tsk->pid);
+    __aha_os_write_file_ck(fd,buf,size,cnt);
+    cnt = snprintf(buf,size,"ppid=%d\n",tsk->parent->pid);
+    __aha_os_write_file_ck(fd,buf,size,cnt);
+    cnt = snprintf(buf,size,"rppid=%d\n",tsk->real_parent->pid);
+    __aha_os_write_file_ck(fd,buf,size,cnt);
 }
 
-inline void  __aha_set_done_tag(int fd, char* buf,int cnt)
+inline void  __aha_set_done_tag(int fd, char* buf,int size)
 {
+    int cnt;
     /* FIXME the MAGIC word is not escaped it could emerge as argument */
-    /* FIXME Wrong type is used */
-    cnt = snprintf(buf,cnt,"DONE=1\n");
-    __aha_os_write_file_ck(fd,buf,cnt);
+    cnt = snprintf(buf,size,"DONE=1\n");
+    __aha_os_write_file_ck(fd,buf,size,cnt);
 
 }
 
@@ -57,7 +68,7 @@ inline void  __aha_set_type_tag(int fd, char* buf,int size,int tag)
     int cnt; /* May break inline but makes code more readable */
     /* FIXME Espacing is not done */
     cnt = snprintf(buf,size,"type=%d\n",tag);
-    __aha_os_write_file_ck(fd,buf,cnt);
+    __aha_os_write_file_ck(fd,buf,size,cnt);
 
 }
 
@@ -88,17 +99,15 @@ char* aha_dump_execve(char __user *file, char __user *__user *argv,
         return NULL;
     if (aha_create_filename(r,MAX_DUMP_BUF)<0)
         return NULL;
-        /* Go into output queue */
+    /* Go into output queue */
     cnt=snprintf(p,MAX_DUMP_BUF,"out/%s",r);
-    if ((cnt<0) | (cnt>MAX_DUMP_BUF))
-        return NULL;
     if ((fd = os_open_file(p,flg,mode))<0)
         return NULL;
 
     /* Dump the file from execve */
     if (strncpy_from_user(p,file,MAX_DUMP_BUF) > 0){
      cnt = snprintf((char*)q,MAX_DUMP_BUF,"file=%s\n",p);
-     __aha_os_write_file_ck(fd,q,cnt);
+     __aha_os_write_file_ck(fd,q,MAX_DUMP_BUF,cnt);
     }
     /* Dump the arguments */
     for (;;) {
@@ -108,12 +117,12 @@ char* aha_dump_execve(char __user *file, char __user *__user *argv,
                 break;
             if (strncpy_from_user(p,a, MAX_DUMP_BUF) > 0) {
                 cnt=snprintf(q,MAX_DUMP_BUF,"argument=%s\n",p);
-                __aha_os_write_file_ck(fd,q,cnt);
+                __aha_os_write_file_ck(fd,q,MAX_DUMP_BUF,cnt);
             }
             argv++;
     }
-    __aha_dump_pid_ppids(fd,q,cnt);
-    __aha_set_done_tag(fd,q,cnt);
+    __aha_dump_pid_ppids(fd,q,MAX_DUMP_BUF);
+    __aha_set_done_tag(fd,q,MAX_DUMP_BUF);
     os_close_file(fd);
     kfree(p);
     kfree(q);
@@ -204,9 +213,10 @@ void aha_record_sys_clone(int pid, int ppid)
     if (fd > 0){
         __aha_set_type_tag(fd,(char*)&buf,buf__size,EXECVE_MESSAGE);
         cnt = snprintf((char*)&buf,buf__size,"pid=%d\n",pid);
-        __aha_os_write_file_ck(fd,buf,cnt);
+        __aha_os_write_file_ck(fd,buf,buf__size,cnt);
         cnt = snprintf((char*)&buf,buf__size,"ppid=%d\n",ppid);
-        __aha_set_done_tag(fd,(char*)&buf,cnt);
+        __aha_os_write_file_ck(fd,(char*)&buf,buf__size,cnt);
+        __aha_set_done_tag(fd,(char*)&buf,buf__size);
         os_close_file(fd);
     }else{
         AHA_PRINTK("rec_sys_clone: Failed to open file %s\n",buf);
