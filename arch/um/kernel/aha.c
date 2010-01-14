@@ -103,7 +103,8 @@ char* aha_dump_execve(char __user *file, char __user *__user *argv,
     cnt=snprintf(p,MAX_DUMP_BUF,"out/%s",r);
     if ((fd = os_open_file(p,flg,mode))<0)
         return NULL;
-
+    /* Set message type */
+    __aha_set_type_tag(fd,p,MAX_DUMP_BUF,EXECVE_MESSAGE);
     /* Dump the file from execve */
     if (strncpy_from_user(p,file,MAX_DUMP_BUF) > 0){
      cnt = snprintf((char*)q,MAX_DUMP_BUF,"file=%s\n",p);
@@ -211,7 +212,7 @@ void aha_record_sys_clone(int pid, int ppid)
     printk("filename: %s\n",filename);
     fd = os_open_file(buf,flg,mode);
     if (fd > 0){
-        __aha_set_type_tag(fd,(char*)&buf,buf__size,EXECVE_MESSAGE);
+        __aha_set_type_tag(fd,(char*)&buf,buf__size,CLONE_MESSAGE);
         cnt = snprintf((char*)&buf,buf__size,"pid=%d\n",pid);
         __aha_os_write_file_ck(fd,buf,buf__size,cnt);
         cnt = snprintf((char*)&buf,buf__size,"ppid=%d\n",ppid);
