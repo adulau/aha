@@ -8,6 +8,7 @@ from ctypes import *
 from ahalib import *
 
 class KernelEvents(ProcessEvent):
+
     def __init__(self,inqueue,outqueue,insultmaxidx):
         self.ahaa = AHAActions(inqueue,outqueue)
 

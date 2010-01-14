@@ -9,8 +9,7 @@
 #for the aha tak to take the decisions
 #The aha framework can be launched then in screen
 #
-
-
+#TODO implement signal handler HUP flushes the file
 import dircache,os.path,time,sys,ConfigParser,getopt
 from ahalib import *
 
