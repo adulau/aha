@@ -1,6 +1,8 @@
 #Common functions shared between aha and aha-worker
+#FIXME Memory leak in process trees -> need to clean up them
+#triggered by the kernel
 from ctypes import *
-import os,sys,random,datetime,json,time
+import os,sys,random,datetime,json,time, unittest
 
 class AHAActions:
 
@@ -88,9 +90,82 @@ class KERNEL_ERRORS():
 
     def __init__(self):
         self.evec = (EPERM,ENOENT,EIO,ENOMEM,EACESS,EFAULT,EPIPE,ETXTBSY)
-
 class ReplyMessage(Structure):
     _fields_ = [ ("block" , c_int), ("exitcode" , c_int),
                    ("substitue" ,c_int),("insult" , c_int) ]
+
+class ProcessTrees:
+    def __init__(self):
+        self.userList = {}
+        self.processList = {}
+        self.foundUser = 0
+
+    def addUser(self,pid):
+        self.userList[pid] = 1 #Shortcut to init
+
+    def __searchTree(self, pid, ppid):
+        #Always add it pid and ppid the list
+        self.processList[pid] = ppid
+        if self.userList.has_key(ppid):
+            print "DEBUG: Found user"
+            self.foundUser = 1
+            return
+        print "DEBUG: Searching ppid ",ppid, "in ",self.processList
+        if self.processList.has_key(ppid):
+            print "DEBUG: found parent of ",pid, "which is ",ppid
+            self.searchTree(ppid,self.processList[ppid])
+        else:
+            print "DEBUG: Cannot find parent of ",ppid
+
+    def searchTree(self,pid,ppid):
+        self.foundUser = 0
+        self.__searchTree(pid,ppid)
+        return self.foundUser
+
+
+class TestProcessTree(unittest.TestCase):
+    def testSearchRegular0(self):
+        x = ProcessTrees()
+        x.addUser(1079)
+        #self.assertDictEqual(x.userList, {1079:1})
+        #FIXME python version is too old
+        self.assertEqual(x.userList[1079],1)
+        print "TEST: SSH clones a process 1081"
+        ret = x.searchTree(1081,1079)
+        self.assertEqual(ret,1)
+        print "TEST: System itself adds a porcess 555"
+        ret = x.searchTree(555,333)
+        self.assertEqual(ret,0)
+        print "TEST: User process 1081 creates a process 1082"
+        ret = x.searchTree(1082,1081)
+        self.assertEqual(ret,1)
+
+        print "TEST: The clone clones again"
+        ret = x.searchTree(1082,1081)
+        self.assertEqual(ret,1)
+
+        print "TEST: The system process 555 creates a process 888"
+        ret = x.searchTree(888,555)
+        self.assertEqual(ret,0)
+
+        print "TEST: Second user arrives"
+        x.addUser(2001)
+        print "TEST: SSH clones a process"
+        ret = x.searchTree(2002,2001)
+        self.assertEqual(ret,1)
+        print "TEST: Second user process create process 2007"
+        ret=x.searchTree(2007,2002)
+        self.assertEqual(ret,1)
+
+        print "TEST: First user process 1081 executes uname ppid 1082"
+        ret = x.searchTree(1082,1081)
+        self.assertEqual(ret,1)
+
+        print "TEST: Second user process 2007 creates process 2008"
+        ret = x.searchTree(2008,2007)
+        self.assertEqual(ret,1)
+
+if __name__ == '__main__':
+    unittest.main()
 
 
