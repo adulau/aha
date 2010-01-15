@@ -41,8 +41,7 @@ class KernelEvents(ProcessEvent):
                 return
             else:
                 print "Process belongs to a user, play"
-
-
+            #TODO add default action
         except KeyError,e:
             print "EXCEPTION: KeyError"
         except IndexError,w:
