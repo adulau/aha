@@ -11,11 +11,31 @@ class KernelEvents(ProcessEvent):
 
     def __init__(self,inqueue,outqueue,insultmaxidx):
         self.ahaa = AHAActions(inqueue,outqueue)
+        self.processtrees = ProcessTrees()
 
     def decision(self,filekey,msg):
+        print msg
         try:
             command = msg['file'][0]
+            pid = int(msg['pid'][0])
+            ppid = int(msg['ppid'][0])
             print "Got command: ",command
+            #Is there a new SSH connection?
+            if msg['file'][0] == '/usr/sbin/sshd':
+                print "New user found pid=",pid,",ppid=",ppid
+                self.processtrees.addUser(pid)
+                self.ahaa.create_message(filekey,block=0, exitcode=0,
+                                                 insult=0, substitue=0)
+                return
+            else:
+               #is this process related to a user?
+              if self.processtrees.searchTree(pid,ppid) == False:
+                   print "Process belongs to the system, allow it"
+                   #Note the process could also belong to a local
+                   #connected user
+                   self.ahaa.create_message(filekey,block=0, exitcode=0,
+                                                    insult=0, substitue=0)
+
             if msg['file'][0] == '/usr/bin/bvi':
                 self.ahaa.create_message(filekey, block=1,
                                     exitcode=KERNEL_ERRORS.ENOMEM,
@@ -28,9 +48,11 @@ class KernelEvents(ProcessEvent):
                                          insult=idx, substitue=0)
                 return
         except KeyError,e:
-            pass
+            print "EXCEPTION: KeyError"
         except IndexError,w:
-            pass
+            print "EXCEPTION: IndexError"
+        except ValueError,s:
+            print "EXCEPTION: ValueError"
         #Default action; allow-> out of memory
         self.ahaa.create_message(filekey,block=0,exitcode=0,insult=0,
                                  substitue=0)
