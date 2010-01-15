@@ -29,9 +29,9 @@ class KernelEvents(ProcessEvent):
                     self.processtrees.addUser(pid)
                     self.ahaa.create_message(filekey,block=0, exitcode=0,
                                              insult=0, substitue=0)
-                return
+                    return
 
-            #is this process related to a user?
+            #is this process induced by clone or sys_execve related to a user?
             if self.processtrees.searchTree(pid,ppid) == False:
                 print "Process belongs to the system, allow it"
                 #Note the process could also belong to a local
@@ -39,6 +39,8 @@ class KernelEvents(ProcessEvent):
                 self.ahaa.create_message(filekey,block=0, exitcode=0,
                                          insult=0, substitue=0)
                 return
+            else:
+                print "Process belongs to a user, play"
 
 
         except KeyError,e:

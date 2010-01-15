@@ -107,7 +107,7 @@ class ProcessTrees:
         #Always add it pid and ppid the list
         self.processList[pid] = ppid
         if self.userList.has_key(ppid):
-            print "DEBUG: user related command"
+            #print "DEBUG: user related command"
             self.foundUser = 1
             return
         #print "DEBUG: Searching ppid ",ppid, "in ",self.processList
