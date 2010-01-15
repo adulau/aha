@@ -107,15 +107,16 @@ class ProcessTrees:
         #Always add it pid and ppid the list
         self.processList[pid] = ppid
         if self.userList.has_key(ppid):
-            print "DEBUG: Found user"
+            print "DEBUG: user related command"
             self.foundUser = 1
             return
-        print "DEBUG: Searching ppid ",ppid, "in ",self.processList
+        #print "DEBUG: Searching ppid ",ppid, "in ",self.processList
         if self.processList.has_key(ppid):
-            print "DEBUG: found parent of ",pid, "which is ",ppid
+            #print "DEBUG: found parent of ",pid, "which is ",ppid
             self.searchTree(ppid,self.processList[ppid])
         else:
-            print "DEBUG: Cannot find parent of ",ppid
+            #print "DEBUG: Cannot find parent of ",ppid
+            pass
 
     def searchTree(self,pid,ppid):
         self.foundUser = 0

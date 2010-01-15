@@ -14,39 +14,33 @@ class KernelEvents(ProcessEvent):
         self.processtrees = ProcessTrees()
 
     def decision(self,filekey,msg):
-        print msg
+        print filekey
         try:
-            command = msg['file'][0]
             pid = int(msg['pid'][0])
             ppid = int(msg['ppid'][0])
-            print "Got command: ",command
-            #Is there a new SSH connection?
-            if msg['file'][0] == '/usr/sbin/sshd':
-                print "New user found pid=",pid,",ppid=",ppid
-                self.processtrees.addUser(pid)
-                self.ahaa.create_message(filekey,block=0, exitcode=0,
-                                                 insult=0, substitue=0)
+            type = int(msg['type'][0])
+            if type == 1:
+                # Got sys_execve
+                command = msg['file'][0]
+                print "Got command: ",command
+                #Is there a new SSH connection?
+                if msg['file'][0] == '/usr/sbin/sshd':
+                    print "New user found pid=",pid,",ppid=",ppid
+                    self.processtrees.addUser(pid)
+                    self.ahaa.create_message(filekey,block=0, exitcode=0,
+                                             insult=0, substitue=0)
                 return
-            else:
-               #is this process related to a user?
-              if self.processtrees.searchTree(pid,ppid) == False:
-                   print "Process belongs to the system, allow it"
-                   #Note the process could also belong to a local
-                   #connected user
-                   self.ahaa.create_message(filekey,block=0, exitcode=0,
-                                                    insult=0, substitue=0)
 
-            if msg['file'][0] == '/usr/bin/bvi':
-                self.ahaa.create_message(filekey, block=1,
-                                    exitcode=KERNEL_ERRORS.ENOMEM,
-                                    insult = 0, substitue=0)
+            #is this process related to a user?
+            if self.processtrees.searchTree(pid,ppid) == False:
+                print "Process belongs to the system, allow it"
+                #Note the process could also belong to a local
+                #connected user
+                self.ahaa.create_message(filekey,block=0, exitcode=0,
+                                         insult=0, substitue=0)
                 return
-            if msg['file'][0] == '/usr/bin/vi':
-                # The index 0 is reserved
-                idx = random.randint(1,insultmaxidx)
-                self.ahaa.create_message(filekey, block=0, exitcode=0,
-                                         insult=idx, substitue=0)
-                return
+
+
         except KeyError,e:
             print "EXCEPTION: KeyError"
         except IndexError,w:
