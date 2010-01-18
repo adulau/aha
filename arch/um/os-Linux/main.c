@@ -16,10 +16,12 @@
 #include "kern_util.h"
 #include "os.h"
 #include "um_malloc.h"
-
+#include "aha-defs.h"
 #define PGD_BOUND (4 * 1024 * 1024)
 #define STACKSIZE (8 * 1024 * 1024)
 #define THREAD_NAME_LEN (256)
+
+int __aha_poll_delay;
 
 static void set_stklim(void)
 {
@@ -38,6 +40,24 @@ static void set_stklim(void)
 	}
 }
 
+/* Read the polling delay from the conf/polldelay file.
+ * On sucess the polling value is returned.
+ * On failure a hardcoded default value is returned.
+ */
+int aha_read_poll_delay(void)
+{
+    FILE *fp;
+    int ret;
+    ret = AHA_DEF_POLL_DELAY; 
+    fp = fopen("conf/polldelay","r");
+    if (fp){
+        if (fscanf(fp,"%d",(int*)&ret)<=0)
+            ret = AHA_DEF_POLL_DELAY;
+        fclose(fp);
+    }
+    return ret;
+}
+
 static __init void do_uml_initcalls(void)
 {
 	initcall_t *call;
@@ -47,6 +67,7 @@ static __init void do_uml_initcalls(void)
 		(*call)();
 		call++;
 	}
+    __aha_poll_delay=aha_read_poll_delay();
 }
 
 static void last_ditch_exit(int sig)

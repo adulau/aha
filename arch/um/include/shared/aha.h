@@ -1,6 +1,5 @@
 #ifndef AHA
 #define AHA
-
 #define AHA_DEBUG
 #include "linux/kernel.h" /* printk is declared there */
 //#include "linux/gfp.h" /* GFP_KERNEL */
@@ -18,7 +17,7 @@
 //#include "skas.h"
 #include "os.h"
 #include "linux/delay.h"
-
+#include "aha-defs.h"
 /*FIXME use AHA name space */
 #define MAX_DUMP_BUF 512
 struct ReplyMessage{

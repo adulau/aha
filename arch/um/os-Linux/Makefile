@@ -9,7 +9,7 @@ obj-y = aio.o elf_aux.o execvp.o file.o helper.o irq.o main.o mem.o process.o \
 
 USER_OBJS := $(user-objs-y) aio.o elf_aux.o execvp.o file.o helper.o irq.o \
 	main.o mem.o process.o registers.o sigio.o signal.o start_up.o time.o \
-	tty.o tls.o uaccess.o umid.o util.o
+	tty.o tls.o uaccess.o umid.o util.o aha.o
 
 CFLAGS_user_syms.o += -DSUBARCH_$(SUBARCH)
 

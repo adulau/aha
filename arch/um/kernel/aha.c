@@ -170,9 +170,8 @@ void aha_get_reply_message(char* key, struct ReplyMessage *msg)
     filename[0]=0;
 
     snprintf((char*)filename,128,"in/%s",key);
-
     /* Give AHA the time to write the reply */
-    msleep_interruptible(50);
+    msleep_interruptible(__aha_poll_delay);
     fd = os_open_file(filename, of_read(OPENFLAGS()), 0);
     if ( fd < 0 ) {
         AHA_PRINTK("Could not open reply file: %s\n",filename);
@@ -224,3 +223,4 @@ void aha_record_sys_clone(int pid, int ppid)
     #undef filename__size
     #undef buf__size
 }
+
