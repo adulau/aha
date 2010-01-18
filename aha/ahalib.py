@@ -31,6 +31,7 @@ class AHAActions:
         except OSError,e:
             pass
 
+       
     #Can trow IOError
     def create_message(self,filename,block,exitcode,substitue,insult):
         try:
@@ -129,7 +130,16 @@ class ProcessTrees:
             self.processList.pop(pid)
         return self.foundUser
 
-
+    def silent_remove_pid(self,pid):
+        try:
+            if self.processList.has_key(pid):
+                self.processList.pop(pid)
+            if self.userList.has_key(pid):
+               self.userList.pop(pid)
+               print "User in process ",pid," pid disconnected"
+        except KeyError,e:
+            pass
+ 
 class TestProcessTree(unittest.TestCase):
     def testSearchRegular0(self):
         x = ProcessTrees()

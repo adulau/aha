@@ -19,6 +19,10 @@ class KernelEvents(ProcessEvent):
             pid = int(msg['pid'][0])
             ppid = int(msg['ppid'][0])
             type = int(msg['type'][0])
+            #Was a process closed?
+            if type == 3:
+                self.processtrees.silent_remove_pid(pid)
+                return
             if type == 1:
                 # Got sys_execve
                 command = msg['file'][0]
@@ -33,7 +37,7 @@ class KernelEvents(ProcessEvent):
 
             #is this process induced by clone or sys_execve related to a user?
             if self.processtrees.searchTree(pid,ppid) == False:
-                print "Process belongs to the system, allow it"
+                #print "Process belongs to the system, allow it"
                 #Note the process could also belong to a local
                 #connected user
                 self.ahaa.create_message(filekey,block=0, exitcode=0,
@@ -41,7 +45,7 @@ class KernelEvents(ProcessEvent):
                 return
             else:
                 print "Process belongs to a user, play"
-            #TODO add default action
+           #TODO add default action
         except KeyError,e:
             print "EXCEPTION: KeyError"
         except IndexError,w:
