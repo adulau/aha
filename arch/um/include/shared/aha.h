@@ -17,6 +17,7 @@ struct ReplyMessage{
 
 #define EXECVE_MESSAGE 1
 #define CLONE_MESSAGE  2
+#define EXIT_MESSAGE   3 
 #ifdef AHA_DEBUG
     #define AHA_PRINTK(args...) printk(args)
 #else
@@ -30,4 +31,5 @@ void aha_handle_insult_messages(struct ReplyMessage *msg, char __user* file,\
                             char __user* __user* argv);
 void aha_get_reply_message(char* key, struct ReplyMessage *msg);
 void aha_record_sys_clone(int pid, int ppid);
+void aha_dump_exits(void);
 #endif

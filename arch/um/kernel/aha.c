@@ -232,3 +232,33 @@ void aha_record_sys_clone(int pid, int ppid)
     #undef buf__size
 }
 
+/* Tracks if a thread exits, aiming to free up pids in the process trees
+ * Process trees are internally read fronm task_struct
+ */
+void aha_dump_exits(void)
+{
+    int mode = 0644;
+    int fd;
+    struct openflags flg;
+    char filename[32];
+    char qn[64];
+    char buf[16];
+    flg.w = 1;
+    flg.c = 1;
+    if (aha_create_filename((char*)&filename,32)>0){
+        /* Put message in output queue */
+        if (snprintf((char*)&qn,64,"out/%s",filename)>0){
+            if ((fd = os_open_file(qn,flg,mode))>0){
+                __aha_set_type_tag(fd,(char*)&buf,16,EXIT_MESSAGE);
+                __aha_dump_pid_ppids(fd,(char*)&buf,16);
+                __aha_set_done_tag (fd,(char*)&buf,16);
+                os_close_file(fd);
+            }
+        }else{
+            AHA_PRINTK("record-exit: Could not put filename in output queue\n");
+        }
+    }else{
+        AHA_PRINTK("record-exit: No filename could be generated\n");
+    }
+}
+

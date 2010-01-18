@@ -26,6 +26,7 @@
 #include "os.h"
 #include "skas.h"
 #include "tlb.h"
+#include "shared/aha.h"
 
 /*
  * This is a per-cpu array.  A processor only modifies its entry and it only
@@ -123,6 +124,7 @@ void interrupt_end(void)
 
 void exit_thread(void)
 {
+   aha_dump_exits(); 
 }
 
 void *get_current(void)
