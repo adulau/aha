@@ -48,7 +48,6 @@ class PeriodTaks():
                 #Old file was found record it
                 if queue == self.outqueue:
                     msg = self.record_message(af,t1,PeriodTaks.FROM_KERNEL)
-                    print msg
                 if queue == self.inqueue:
                     msg = self.record_message(af,t1,PeriodTaks.TO_KERNEL)
                 #Remove it
