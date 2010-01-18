@@ -119,8 +119,12 @@ class ProcessTrees:
             pass
 
     def searchTree(self,pid,ppid):
+        #Make sure that pid is different from ppid -> to avoid recursion error
         self.foundUser = 0
         self.__searchTree(pid,ppid)
+        #If the process belongs to the system remove it, to free up memory
+        if self.foundUser == False:
+            self.processList.pop(pid)
         return self.foundUser
 
 
@@ -165,6 +169,26 @@ class TestProcessTree(unittest.TestCase):
         print "TEST: Second user process 2007 creates process 2008"
         ret = x.searchTree(2008,2007)
         self.assertEqual(ret,1)
+
+    def testCleanUp(self):
+        x = ProcessTrees()
+        #Init is executed
+        ret = x.searchTree(1,0)
+        self.assertEqual(ret,0)
+        print x.processList
+        self.assertEqual(len(x.processList.keys()),0)
+
+    def testMixCleanUp(self):
+        x = ProcessTrees()
+        x.addUser(123)
+        ret = x.searchTree(444,123)
+        self.assertEqual(ret,1)
+        self.assertEqual(len(x.processList.keys()),1)
+        #System adds a process the process vector should not grow
+        #Process 555 does not exits
+        ret = x.searchTree(333,555)
+        self.assertEqual(ret,0)
+        self.assertEqual(len(x.processList.keys()),1)
 
 if __name__ == '__main__':
     unittest.main()
