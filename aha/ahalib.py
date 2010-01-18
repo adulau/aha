@@ -16,10 +16,10 @@ class AHAActions:
         fp = open(filename,'r')
         for i in fp.read().split('\n'):
             try:
-                (key,value) = i.split('=')
+                (key,value) = i.split('=',1)
                 if msg.has_key(key) == False:
                     msg[key]=[]
-                    msg[key].append(value)
+                msg[key].append(value)
             except ValueError,e:
                 pass
         fp.close()
