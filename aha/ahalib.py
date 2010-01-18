@@ -1,6 +1,7 @@
 #Common functions shared between aha and aha-worker
 #FIXME Memory leak in process trees -> need to clean up them
 #triggered by the kernel
+#TODO loader should include timestamp in the message hash
 from ctypes import *
 import os,sys,random,datetime,json,time, unittest
 
@@ -103,6 +104,8 @@ class ProcessTrees:
         self.aplist = {}
     # Record additional information about processes like SSH parameters
     # and timestamps etc
+    #TODO annotate SSH_LOGNAME
+    #TODO annotate used terminal
     def annotateProcessList(self,msg):
         try:
             pid  = msg['pid'][0]
@@ -167,7 +170,30 @@ class ProcessTrees:
                print "User in process ",pid," pid disconnected"
         except KeyError,e:
             pass
- 
+
+    def exportUserListTxt(self,filename):
+        try:
+            #Opens the file in append mode aiming to keep the history 
+            f = open(filename, 'a')
+            ts =  time.strftime("%Y-%m-%d %H:%M:%S") 
+            f.write("*** UserList created on %s ***\n"%(str(ts)))
+            for pid in self.userList.keys():
+                #See if some annotation is found for this pid
+                if self.aplist.has_key(pid):
+                    if self.aplist[pid].has_key('ssh_client'):
+                        f.write("User:%s\n"%self.aplist[pid]['ssh_client'])
+                if self.aplist[pid].has_key('timestamp'):
+                        #Convert timestamp
+                        ts = self.aplist[pid]['timestamp']
+                        obj=datetime.datetime.fromtimestamp(float(ts))
+                        f.write("Connection date:%s\n\n"%str(obj))
+            f.close()
+        except IOError,e:
+            #TODO implement logging of internal errors
+            #User should notice that there is something wrong when 
+            #user lists are outdated or corrupted
+            pass
+
 class TestProcessTree(unittest.TestCase):
     def testSearchRegular0(self):
         x = ProcessTrees()
@@ -239,14 +265,17 @@ class TestProcessTree(unittest.TestCase):
         self.assertEqual(ret,0)
 
     def testAnnotate(self):
-        msg = {'env': ['SHELL=/bin/sh', 'TERM=screen', 'SSH_CLIENT=192.168.1.23 49826 22', 'SSH_TTY=/dev/pts/0', 'USER=gabriela', 'MAIL=/var/mail/gabriela', 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games', 'PWD=/home/gabriela', 'LANG=en_US.UTF-8', 'HISTCONTROL=ignoreboth', 'SHLVL=1', 'HOME=/home/gabriela', 'LOGNAME=gabriela', 'SSH_CONNECTION=192.168.1.23 49826 192.168.1.1 22', '_=/usr/bin/lesspipe'], 'rppid': ['1138'], 'pid': ['1139'], 'argument': ['lesspipe'], 'DONE': ['1'], 'file': ['/usr/bin/lesspipe'], 'ppid': ['1138'], 'type': ['1'], 'timestamp':'12345'}
+        msg = {'env': ['SHELL=/bin/sh', 'TERM=screen', 'SSH_CLIENT=192.168.1.23 49826 22', 'SSH_TTY=/dev/pts/0', 'USER=gabriela', 'MAIL=/var/mail/gabriela', 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games', 'PWD=/home/gabriela', 'LANG=en_US.UTF-8', 'HISTCONTROL=ignoreboth', 'SHLVL=1', 'HOME=/home/gabriela', 'LOGNAME=gabriela', 'SSH_CONNECTION=192.168.1.23 49826 192.168.1.1 22', '_=/usr/bin/lesspipe'], 'rppid': ['1138'], 'pid': ['1139'], 'argument': ['lesspipe'], 'DONE': ['1'], 'file': ['/usr/bin/lesspipe'], 'ppid': ['1138'], 'type': ['1'], 'timestamp':'1263846206'}
         x = ProcessTrees()
         x.annotateProcessList(msg)
         # Check if information is there
-        self.assertEqual(x.aplist['1139']['timestamp'],'12345')
+        self.assertEqual(x.aplist['1139']['timestamp'],'1263846206')
         s = "192.168.1.23 49826 22"
         self.assertEqual(x.aplist['1139']['ssh_client'],s)
         self.assertEqual(x.aplist['1139']['file'], '/usr/bin/lesspipe')
+        x.addUser('1139')
+        #Test export
+        x.exportUserListTxt('/tmp/userlist.txt')
 if __name__ == '__main__':
     unittest.main()
 
