@@ -119,7 +119,9 @@ class ProcessTrees:
             pass
 
     def searchTree(self,pid,ppid):
-        #Make sure that pid is different from ppid -> to avoid recursion error
+        if pid == ppid:
+            # Avoid recursion error
+            return 0
         self.foundUser = 0
         self.__searchTree(pid,ppid)
         #If the process belongs to the system remove it, to free up memory
@@ -189,6 +191,14 @@ class TestProcessTree(unittest.TestCase):
         ret = x.searchTree(333,555)
         self.assertEqual(ret,0)
         self.assertEqual(len(x.processList.keys()),1)
+
+    def testRecurionErrorBreak(self):
+        #FIXME can an attacker create a process having its own parent?
+        x  = ProcessTrees()
+        x.addUser(123)
+        x.searchTree(123,222)
+        ret = x.searchTree(222,222)
+        self.assertEqual(ret,0)
 
 if __name__ == '__main__':
     unittest.main()
