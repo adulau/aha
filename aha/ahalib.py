@@ -1,7 +1,6 @@
 #Common functions shared between aha and aha-worker
 #FIXME Memory leak in process trees -> need to clean up them
 #triggered by the kernel
-#TODO loader should include timestamp in the message hash
 from ctypes import *
 import os,sys,random,datetime,json,time, unittest
 
@@ -14,6 +13,9 @@ class AHAActions:
     #Can trow IOError
     def load_file(self,filename):
         msg = {}
+        s = os.stat(filename)
+        ts = int(s[os.path.stat.ST_CTIME])
+        msg['timestamp'] = ts
         fp = open(filename,'r')
         for i in fp.read().split('\n'):
             try:
