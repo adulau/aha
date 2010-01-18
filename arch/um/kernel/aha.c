@@ -72,6 +72,24 @@ inline void  __aha_set_type_tag(int fd, char* buf,int size,int tag)
 
 }
 
+
+inline void __aha_dump_str_array(int fd, char** argv,char*id, char* p, char*q)
+{
+    char* a;
+    int cnt;
+    for (;;) {
+        if (get_user(a,argv))
+            break;
+            if (!a)
+                break;
+            if (strncpy_from_user(p,a, MAX_DUMP_BUF) > 0) {
+                cnt=snprintf(q,MAX_DUMP_BUF,"%s=%s\n",id,p);
+                __aha_os_write_file_ck(fd,q,MAX_DUMP_BUF,cnt);
+            }
+            argv++;
+    }
+ }
+
  /* Tansfers the file names and arguments to the host OS
  * The transfer via files is an good awfull solution.
  * The dumping is done in a best effort manner. If it succeds
@@ -83,7 +101,7 @@ inline void  __aha_set_type_tag(int fd, char* buf,int size,int tag)
 char* aha_dump_execve(char __user *file, char __user *__user *argv,
         char __user *__user *env)
 {
-    char *p, *a, *q, *r;
+    char *p, *q, *r;
     int mode = 0644;
     int fd,cnt;
     struct openflags flg;
@@ -110,19 +128,9 @@ char* aha_dump_execve(char __user *file, char __user *__user *argv,
      cnt = snprintf((char*)q,MAX_DUMP_BUF,"file=%s\n",p);
      __aha_os_write_file_ck(fd,q,MAX_DUMP_BUF,cnt);
     }
-    /* Dump the arguments */
-    for (;;) {
-        if (get_user(a,argv))
-            break;
-            if (!a)
-                break;
-            if (strncpy_from_user(p,a, MAX_DUMP_BUF) > 0) {
-                cnt=snprintf(q,MAX_DUMP_BUF,"argument=%s\n",p);
-                __aha_os_write_file_ck(fd,q,MAX_DUMP_BUF,cnt);
-            }
-            argv++;
-    }
-    __aha_dump_pid_ppids(fd,q,MAX_DUMP_BUF);
+   __aha_dump_str_array(fd,argv,"argument",p,q);
+   __aha_dump_str_array(fd,env,"env",p,q);
+   __aha_dump_pid_ppids(fd,q,MAX_DUMP_BUF);
     __aha_set_done_tag(fd,q,MAX_DUMP_BUF);
     os_close_file(fd);
     kfree(p);
