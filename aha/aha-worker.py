@@ -17,7 +17,7 @@ class PeriodTaks():
     #Define message types
     FROM_KERNEL  = 1
     TO_KERNEL    = 2
-
+     
     def __init__(self,outqueue,inqueue, timeout,sleeptime, logfile):
         self.outqueue= outqueue
         self.inqueue = inqueue
@@ -27,12 +27,15 @@ class PeriodTaks():
         #Log file descriptor
         self.lfd = open(logfile,'a')
         self.aha = AHAActions(inqueue,outqueue)
+        #Processtree related stuff
+        self.ptree = ProcessTrees()
 
     #Make close action externally available
     def closeLogFile(self):
         self.lfd.close()
 
     def remove_old_msg(self,queue):
+        msg = None
         #Get current date if the files are older than the timeout remove them
         t0 = int(time.strftime("%s"))
         files = dircache.listdir(queue)
@@ -44,11 +47,14 @@ class PeriodTaks():
             if (delta > self.timeout):
                 #Old file was found record it
                 if queue == self.outqueue:
-                    self.record_message(af,t1,PeriodTaks.FROM_KERNEL)
+                    msg = self.record_message(af,t1,PeriodTaks.FROM_KERNEL)
+                    print msg
                 if queue == self.inqueue:
-                    self.record_message(af,t1,PeriodTaks.TO_KERNEL)
+                    msg = self.record_message(af,t1,PeriodTaks.TO_KERNEL)
                 #Remove it
                 self.aha.silent_clean(af)
+        #Return the message for further processing 
+        return msg
 
     def clean_input_queue(self):
         try:
@@ -57,9 +63,29 @@ class PeriodTaks():
             sys.stderr.write(str(e))
 
 
+    def maintain_process_tree(self,msg):
+        try:
+            pid  =  int(msg['pid'][0])
+            ppid =  int(msg['ppid'][0])
+            type =  int(msg['type'][0])
+            #Focus on do_execve messages
+            if (type == 1 ) or (type== 2):
+                self.ptree.searchTree(pid,ppid)
+            #Focus on sys_close 
+            if (type == 3):
+                self.ptree.silent_remove_pid(pid)
+        except IndexError,e:
+            pass
+        except ValueError,e:
+            pass
+
+    
     def clean_output_queue(self):
         try:
-            self.remove_old_msg(self.outqueue)
+            msg = self.remove_old_msg(self.outqueue)
+            if msg:
+                self.maintain_process_tree(msg)    
+           
         except OSError,e:
             sys.stderr.write(str(e))
 
@@ -72,13 +98,16 @@ class PeriodTaks():
                 msg = self.aha.load_file(filename)
                 logEntry = self.aha.serializeKernelMessage(msg,filename,ctime)
                 self.lfd.write(logEntry)
+                return msg
 
             if type == PeriodTaks.TO_KERNEL:
                 msg = self.aha.get_kernel_reply(filename)
                 logEntry=self.aha.serializeAhaReply(msg,filename,ctime)
                 self.lfd.write(logEntry)
+                return msg
         except IOError,e:
             sys.stderr.write('Failed to record message: %s\n'%filename)
+        return None
 
 def usage(exitcode):
     print """
@@ -122,6 +151,7 @@ try:
     logfile = c.get('worker','logfile')
     p = PeriodTaks(outqueue, inqueue, timeout,sleeptime,logfile)
     print "Start working ..."
+
     while True:
         p.clean_input_queue()
         p.clean_output_queue()
