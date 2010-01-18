@@ -100,7 +100,35 @@ class ProcessTrees:
         self.userList = {}
         self.processList = {}
         self.foundUser = 0
-
+        self.aplist = {}
+    # Record additional information about processes like SSH parameters
+    # and timestamps etc
+    def annotateProcessList(self,msg):
+        try:
+            pid  = msg['pid'][0]
+            ppid = msg['ppid'][0]
+            if self.aplist.has_key(pid) == False:
+                #Got a new process, so create a new dictionary for meta data
+                self.aplist[pid] = dict()
+            #Does the message  has a file name ?
+            if msg.has_key('file'):
+                self.aplist[pid]['file'] = msg['file'][0]
+            #Does the message has SSH related information?
+            if msg.has_key('env'):
+                # Go through the environment list
+                for ev in msg['env']:
+                    if ev.startswith('SSH_CLIENT='):
+                        ev = ev.replace('SSH_CLIENT=','')
+                        self.aplist[pid]['ssh_client'] = ev
+                        break
+            # Is there a timestamp?
+            if msg.has_key('timestamp'):
+                self.aplist[pid]['timestamp'] = msg['timestamp']
+ 
+        except ValueError,e:
+            pass
+        except IndexError,e:
+            pass
     def addUser(self,pid):
         self.userList[pid] = 1 #Shortcut to init
 
@@ -210,6 +238,15 @@ class TestProcessTree(unittest.TestCase):
         ret = x.searchTree(222,222)
         self.assertEqual(ret,0)
 
+    def testAnnotate(self):
+        msg = {'env': ['SHELL=/bin/sh', 'TERM=screen', 'SSH_CLIENT=192.168.1.23 49826 22', 'SSH_TTY=/dev/pts/0', 'USER=gabriela', 'MAIL=/var/mail/gabriela', 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games', 'PWD=/home/gabriela', 'LANG=en_US.UTF-8', 'HISTCONTROL=ignoreboth', 'SHLVL=1', 'HOME=/home/gabriela', 'LOGNAME=gabriela', 'SSH_CONNECTION=192.168.1.23 49826 192.168.1.1 22', '_=/usr/bin/lesspipe'], 'rppid': ['1138'], 'pid': ['1139'], 'argument': ['lesspipe'], 'DONE': ['1'], 'file': ['/usr/bin/lesspipe'], 'ppid': ['1138'], 'type': ['1'], 'timestamp':'12345'}
+        x = ProcessTrees()
+        x.annotateProcessList(msg)
+        # Check if information is there
+        self.assertEqual(x.aplist['1139']['timestamp'],'12345')
+        s = "192.168.1.23 49826 22"
+        self.assertEqual(x.aplist['1139']['ssh_client'],s)
+        self.assertEqual(x.aplist['1139']['file'], '/usr/bin/lesspipe')
 if __name__ == '__main__':
     unittest.main()
 
