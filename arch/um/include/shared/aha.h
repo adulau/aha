@@ -2,23 +2,11 @@
 #define AHA
 #define AHA_DEBUG
 #include "linux/kernel.h" /* printk is declared there */
-//#include "linux/gfp.h" /* GFP_KERNEL */
-
 #include "linux/stddef.h"
-//#include "linux/fs.h"
-//#include "linux/smp_lock.h"
 #include "linux/ptrace.h" /* access to kmalloc */
-//#include "linux/sched.h"
-//#include "asm/current.h"
-//#include "asm/processor.h"
-//#include "asm/uaccess.h"
-//#include "as-layout.h"
-//#include "mem_user.h"
-//#include "skas.h"
 #include "os.h"
 #include "linux/delay.h"
 #include "aha-defs.h"
-/*FIXME use AHA name space */
 #define MAX_DUMP_BUF 512
 struct ReplyMessage{
     int block;
@@ -42,6 +30,4 @@ void aha_handle_insult_messages(struct ReplyMessage *msg, char __user* file,\
                             char __user* __user* argv);
 void aha_get_reply_message(char* key, struct ReplyMessage *msg);
 void aha_record_sys_clone(int pid, int ppid);
-
-
 #endif
