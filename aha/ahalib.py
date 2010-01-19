@@ -292,11 +292,11 @@ class TestProcessTree(unittest.TestCase):
         x = ProcessTrees()
         x.annotateProcessList(msg)
         # Check if information is there
-        self.assertEqual(x.aplist['1139']['timestamp'],'1263846206')
+        self.assertEqual(x.aplist[1139]['timestamp'],'1263846206')
         s = "192.168.1.23 49826 22"
-        self.assertEqual(x.aplist['1139']['ssh_client'],s)
-        self.assertEqual(x.aplist['1139']['file'], '/usr/bin/lesspipe')
-        x.addUser('1139')
+        self.assertEqual(x.aplist[1139]['ssh_client'],s)
+        self.assertEqual(x.aplist[1139]['file'], '/usr/bin/lesspipe')
+        x.addUser(1139)
         #Test export
         x.exportUserListTxt('/tmp/userlist.txt')
 if __name__ == '__main__':
