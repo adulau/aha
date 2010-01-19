@@ -225,7 +225,7 @@ class ProcessTrees:
             ts =  time.strftime("%Y-%m-%d %H:%M:%S") 
             f.write("*** UserList created on %s ***\n"%(str(ts)))
             for pid in self.userList.keys():
-                print "Inspecting user: ",pid
+                f.write("** user root process %d **\n"%pid)
                 #See if some annotation is found for this pid
                 if self.aplist.has_key(pid):
                     print "Found some annotations for",pid
