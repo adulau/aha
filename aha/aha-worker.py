@@ -17,7 +17,10 @@ class PeriodTaks():
     #Define message types
     FROM_KERNEL  = 1
     TO_KERNEL    = 2
-     
+    
+    def debug(self,msg):
+        print "WDBG ",msg
+    
     def __init__(self,outqueue,inqueue, timeout,sleeptime, logfile):
         self.outqueue= outqueue
         self.inqueue = inqueue
@@ -39,54 +42,79 @@ class PeriodTaks():
         #Get current date if the files are older than the timeout remove them
         t0 = int(time.strftime("%s"))
         files = dircache.listdir(queue)
+        mlist = []
         for file in files:
             af = queue + os.sep + file
+            self.debug("found file : %s"%af)
             s = os.stat(af)
             t1 = int(s[os.path.stat.ST_CTIME])
             delta = t0 - t1
             if (delta > self.timeout):
+                self.debug("%s exceeds threshold"%af)
                 #Old file was found record it
                 if queue == self.outqueue:
                     msg = self.record_message(af,t1,PeriodTaks.FROM_KERNEL)
+                    mlist.append(msg)
                 if queue == self.inqueue:
                     msg = self.record_message(af,t1,PeriodTaks.TO_KERNEL)
+                    mlist.append(msg)
                 #Remove it
                 self.aha.silent_clean(af)
-        #Return the message for further processing 
-        return msg
+        return mlist
 
     def clean_input_queue(self):
         try:
             self.remove_old_msg(self.inqueue)
         except OSError,e:
-            sys.stderr.write(str(e))
+            sys.stderr.write("%s\n"%str(e))
 
+    def maintain_process_tree(self,mlist,exportFile):
+        if mlist == None:
+            return
+        for msg in mlist:
+            self.handle_msg(msg,exportFile)
 
-    def maintain_process_tree(self,msg):
+    def handle_msg(self,msg,exportFile):
         try:
-            pid  =  int(msg['pid'][0])
-            ppid =  int(msg['ppid'][0])
-            type =  int(msg['type'][0])
-            #Focus on do_execve messages
-            if (type == 1 ) or (type== 2):
-                self.ptree.searchTree(pid,ppid)
-            #Focus on sys_close 
-            if (type == 3):
-                self.ptree.silent_remove_pid(pid)
-        except IndexError,e:
+            if msg:
+                type = int(msg['type'][0])
+                pid = int(msg['pid'][0])
+                ppid = int(msg['ppid'][0])
+                #sys_execve messages
+                if (type == 1):
+                    self.debug('Got sys_execve message')
+                    #Is there a new user
+                    file = msg['file'][0]
+                    self.debug('Got command: %s'%file)
+                    if file == '/usr/sbin/sshd':
+                        self.debug("New user found %s"%pid)
+                        self.ptree.addUser(pid)
+                #Check all pids and ppids
+                if self.ptree.searchTree(pid,ppid):
+                    self.ptree.annotateProcessList(msg)
+                    self.debug("User related command")
+                    self.ptree.exportUserListTxt(exportFile)
+                else:
+                    self.debug("System related command")
+                    #TODO free annotated list
+                # Remove dead processes from process tree 
+                if (type == 3):
+                    pid = int(msg['pid'][0])
+                    self.ptree.silent_remove_pid(pid)
+        except KeyError,e:
             pass
         except ValueError,e:
             pass
-
-    
+        except IndexError,e:
+            pass
+ 
     def clean_output_queue(self):
         try:
-            msg = self.remove_old_msg(self.outqueue)
-            if msg:
-                self.maintain_process_tree(msg)    
-           
+            mlist = self.remove_old_msg(self.outqueue)
+            #Propagate message list for further processor
+            return mlist
         except OSError,e:
-            sys.stderr.write(str(e))
+            sys.stderr.write("%s\n"%(str(e)))
 
     #Parse the file an put the information in a log file for later processing
     #One log file is handier than for each message a file
@@ -106,7 +134,7 @@ class PeriodTaks():
                 return msg
         except IOError,e:
             sys.stderr.write('Failed to record message: %s\n'%filename)
-        return None
+        return mlist 
 
 def usage(exitcode):
     print """
@@ -148,12 +176,15 @@ try:
     inqueue = c.get('common','inqueue')
     outqueue= c.get('common','outqueue')
     logfile = c.get('worker','logfile')
+    userlistFile = c.get('worker','exportdir') + os.sep + 'userlist'
+    
     p = PeriodTaks(outqueue, inqueue, timeout,sleeptime,logfile)
     print "Start working ..."
 
     while True:
         p.clean_input_queue()
-        p.clean_output_queue()
+        mlist = p.clean_output_queue()
+        p.maintain_process_tree(mlist,userlistFile)
         time.sleep(sleeptime)
         print "Resume ..."
 
