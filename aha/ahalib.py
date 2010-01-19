@@ -105,16 +105,21 @@ class ProcessTrees:
         self.foundUser = 0
         self.aplist = {}
     #This first clone of /usr/sbin/sshd does not has the
-    #SSH specific environment variables
-    #FIXME search is only done at first level of the tree
-    #pid is the ssh clone for this user
+    #SSH specific environment variables. Therefore ask all the
+    #children
     def search_ssh_info(self,pid):
-        for child in self.processList:
-            if child == pid:
-                #Found a child of the first priviledged seperated process
+        print "Searching info for ",pid
+        children = self.get_children(pid)
+        print "Children of pid",children
+        print type(children)
+        for child in children:
+            if self.aplist.has_key(child):
+                print "Found annotations for child %d"%child
                 if self.aplist[child].has_key('ssh_client'):
+                    print "Found ssh info for child %d"%child
                     return self.aplist[child]['ssh_client']
         # Retuns None if ssh related information was not found
+        sys.stderr.write('ERROR: No child provided SSH information\n')
         return None
         
     # Record additional information about processes like SSH parameters
@@ -131,6 +136,7 @@ class ProcessTrees:
             #Does the message  has a file name ?
             if msg.has_key('file'):
                 self.aplist[pid]['file'] = msg['file'][0]
+                print "Annotated pid=",pid, "file=",msg['file'][0]
             #Does the message has SSH related information?
             if msg.has_key('env'):
                 # Go through the environment list
@@ -138,13 +144,16 @@ class ProcessTrees:
                     if ev.startswith('SSH_CLIENT='):
                         ev = ev.replace('SSH_CLIENT=','')
                         self.aplist[pid]['ssh_client'] = ev
+                        print "Annotated pid=", pid," ev",ev
             # Is there a timestamp?
             if msg.has_key('timestamp'):
                 self.aplist[pid]['timestamp'] = msg['timestamp']
  
         except ValueError,e:
+            print e
             pass
         except IndexError,e:
+            print e
             pass
 
     def addUser(self,pid):
@@ -216,12 +225,14 @@ class ProcessTrees:
             ts =  time.strftime("%Y-%m-%d %H:%M:%S") 
             f.write("*** UserList created on %s ***\n"%(str(ts)))
             for pid in self.userList.keys():
+                print "Inspecting user: ",pid
                 #See if some annotation is found for this pid
                 if self.aplist.has_key(pid):
+                    print "Found some annotations for",pid
                     #Look for SSH variables in the first child process
                     sshinfo = self.search_ssh_info(pid)
                     if sshinfo:
-                        f.write(sshinfo)
+                        f.write("%s\n"%sshinfo)
                     else:
                         sys.stderr.write("No SSH information is there\n")
                     if self.aplist[pid].has_key('timestamp'):

@@ -45,12 +45,12 @@ class PeriodTaks():
         mlist = []
         for file in files:
             af = queue + os.sep + file
-            self.debug("found file : %s"%af)
+            #self.debug("found file : %s"%af)
             s = os.stat(af)
             t1 = int(s[os.path.stat.ST_CTIME])
             delta = t0 - t1
             if (delta > self.timeout):
-                self.debug("%s exceeds threshold"%af)
+                #self.debug("%s exceeds threshold"%af)
                 #Old file was found record it
                 if queue == self.outqueue:
                     msg = self.record_message(af,t1,PeriodTaks.FROM_KERNEL)
@@ -85,28 +85,32 @@ class PeriodTaks():
                     self.debug('Got sys_execve message')
                     #Is there a new user
                     file = msg['file'][0]
-                    self.debug('Got command: %s'%file)
+                    self.debug('Got command:  %s, pid=%d,ppid=%d'%(file,pid,ppid))
+                    self.ptree.annotateProcessList(msg)
                     if file == '/usr/sbin/sshd':
                         self.debug("New user found %s"%pid)
                         self.ptree.addUser(pid)
+                    #Annotate all the processes
                 #Check all pids and ppids
                 if self.ptree.searchTree(pid,ppid):
-                    self.ptree.annotateProcessList(msg)
-                    self.debug("User related command")
-                    self.ptree.exportUserListTxt(exportFile)
+                    self.debug("User related command %d"%pid)
                 else:
                     self.debug("System related command")
                     #TODO free annotated list
                 # Remove dead processes from process tree 
                 if (type == 3):
                     pid = int(msg['pid'][0])
-                    self.ptree.silent_remove_pid(pid)
+                    #When the attacker disconnects, regenerate a status file
+                    if self.ptree.userList.has_key(pid):
+                        print "User disconnected export file"
+                        self.ptree.exportUserListTxt(exportFile)
+                    #self.ptree.silent_remove_pid(pid)
         except KeyError,e:
-            pass
+            print e 
         except ValueError,e:
-            pass
+            print e
         except IndexError,e:
-            pass
+            print e
  
     def clean_output_queue(self):
         try:
