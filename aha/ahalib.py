@@ -125,8 +125,6 @@ class ProcessTrees:
         try:
             pid  = int(msg['pid'][0])
             ppid = int(msg['ppid'][0])
-            print "Annotate process ",pid
-            print msg
             if self.aplist.has_key(pid) == False:
                 #Got a new process, so create a new dictionary for meta data
                 self.aplist[pid] = dict()
@@ -140,17 +138,15 @@ class ProcessTrees:
                     if ev.startswith('SSH_CLIENT='):
                         ev = ev.replace('SSH_CLIENT=','')
                         self.aplist[pid]['ssh_client'] = ev
-                        print"GROAAAAAAAAAAAAAAAAAAAAARRRRRRRRRRRRRRR: ",pid
             # Is there a timestamp?
             if msg.has_key('timestamp'):
                 self.aplist[pid]['timestamp'] = msg['timestamp']
-            print "annotated list"
-            print self.aplist
  
         except ValueError,e:
             pass
         except IndexError,e:
             pass
+
     def addUser(self,pid):
         self.userList[pid] = 1 #Shortcut to init
 
