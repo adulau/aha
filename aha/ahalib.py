@@ -176,6 +176,29 @@ class ProcessTrees:
             self.processList.pop(pid)
         return self.foundUser
 
+    #Recursively get the children of a process
+    #Internal function
+    def __get_children(self,pid):
+        #Establish a list of children for a process
+        children = []
+        #FIXME not efficient; Go through all the processes
+        for p in self.processList.keys():
+            if  self.processList[p] == pid:
+                children.append(p)
+                #Record them in a global list too
+                self.children[p]=1
+        if len(children) == 0:
+            return
+        #Go through the children list and do a recursion
+        for p in children:
+            self.__get_children(p) 
+        
+    def get_children(self,pid):
+        #Empty the list; do not want duplicates
+        self.children = dict()
+        self.__get_children(pid)
+        return self.children.keys()
+
     def silent_remove_pid(self,pid):
         try:
             if self.processList.has_key(pid):
@@ -299,6 +322,38 @@ class TestProcessTree(unittest.TestCase):
         x.addUser(1139)
         #Test export
         x.exportUserListTxt('/tmp/userlist.txt')
+
+    def testChildrenList(self):
+        x = ProcessTrees()
+        x.addUser(123) # Has two children
+        ret = x.searchTree(333,123)
+        self.assertEqual(ret,1)
+
+        ret = x.searchTree(334,123)
+        self.assertEqual(ret,1)
+        
+        #First child has onother child
+        ret = x.searchTree(555,333)
+        self.assertEqual(ret,1)
+        #Second child has another child
+        ret = x.searchTree(666,334)
+        self.assertEqual(ret,1)
+        #Add concurrent user that has one child
+        x.addUser(1000)
+        ret = x.searchTree(1001,1000)
+        self.assertEqual(ret,1)
+        children = x.get_children(123)
+        #[666, 555, 333, 334] 
+        self.assertEqual(len(children), 4) 
+        self.assertEqual(children[0],666)
+        self.assertEqual(children[1],555)
+        self.assertEqual(children[2],333)
+        self.assertEqual(children[3],334)
+        #Query children for an invalid process
+        x= ProcessTrees()
+        children = x.get_children(999)
+        self.assertEqual(len(children),0)
+    
 if __name__ == '__main__':
     unittest.main()
 
