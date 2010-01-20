@@ -219,6 +219,11 @@ class ProcessTrees:
         except KeyError,e:
             pass
 
+    def does_user_disconnects(self,pid):
+        if self.userList.has_key(pid):
+            return True
+        else: 
+            return False
     # Describe the root process 
     # f is file object
     # pid is the root process
@@ -280,15 +285,19 @@ class ProcessTrees:
         print "Children of ",pid," ",self.get_children(pid)
         for pid in self.get_children(pid):
             ts = self.get_timestamp_from_pid(pid)
+            its = int(ts)
             file = self.get_command_from_pid(pid)
             if ts != -1 and file != None:
-                vector[int(ts)] = file
+                if vector.has_key(its) == False:
+                    vector[its] = []
+                vector[its].append(file)
        #Now sort the vector    
         tab = vector.keys()
         tab.sort()
         ret = []
         for ts in tab:
-            ret.append(vector[ts])
+            for c in vector[ts]:
+                ret.append(c)
         return ret
 
 class TestProcessTree(unittest.TestCase):

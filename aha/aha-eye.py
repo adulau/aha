@@ -32,7 +32,15 @@ def extract_object(obj):
                 #Annotation info is only available in sys_execve messages
                 print "annotate process ",pid
                 ptress.annotateProcessList(obj)                   
-        
+        # Thread exited
+        if (tp == 3):
+            if ptress.does_user_disconnects(pid):
+                #User disconnected generate a report, to avoid that other 
+                #information is droped
+                print "List export is triggered"
+                ptress.exportUserListTxt('userlist.txt')
+                ptress.silent_remove_pid(pid)
+
     except ValueError,e:
         print "Failed to parse ",obj
     except KeyError,e:
