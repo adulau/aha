@@ -10,7 +10,7 @@
 #The aha framework can be launched then in screen
 #
 #TODO implement signal handler HUP flushes the file
-import dircache,os.path,time,sys,ConfigParser,getopt
+import dircache,os.path,time,sys,ConfigParser,getopt, traceback
 from ahalib import *
 
 class PeriodTaks():
@@ -66,7 +66,12 @@ class PeriodTaks():
         try:
             self.remove_old_msg(self.inqueue)
         except OSError,e:
-            sys.stderr.write("%s\n"%str(e))
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            traceback.print_exception(exceptionType, exceptionValue, 
+                                     exceptionTraceback, file=sys.stderr)
+            traceback.print_tb(exceptionTraceback, file=sys.stdout)
+
+    
 
     def maintain_process_tree(self,mlist,exportFile):
         if mlist == None:
@@ -118,7 +123,10 @@ class PeriodTaks():
             #Propagate message list for further processor
             return mlist
         except OSError,e:
-            sys.stderr.write("%s\n"%(str(e)))
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            traceback.print_exception(exceptionType, exceptionValue, 
+                                     exceptionTraceback, file=sys.stderr)
+            traceback.print_tb(exceptionTraceback, file=sys.stdout)
 
     #Parse the file an put the information in a log file for later processing
     #One log file is handier than for each message a file
