@@ -219,6 +219,30 @@ class ProcessTrees:
         except KeyError,e:
             pass
 
+    def desc_root_process(self,f,pid):
+        f.write("** user root process %d **\n"%pid)
+        #See if some annotation is found for this pid
+        if self.aplist.has_key(pid):
+            print "Found some annotations for",pid
+            #Look for SSH variables in the first child process
+            sshinfo = self.search_ssh_info(pid)
+            if sshinfo:
+                f.write("%s\n"%sshinfo)
+            else:
+                sys.stderr.write("No SSH information is there\n")
+                if self.aplist[pid].has_key('timestamp'):
+                    #Convert timestamp
+                    ts = self.aplist[pid]['timestamp']
+                    obj=datetime.datetime.fromtimestamp(float(ts))
+                    f.write("Connection date:%s\n\n"%str(obj))
+                else:
+                    f.write("No timestamp information is there\n")
+        else:
+            sys.stderr.write("No annotations found for pid: %d\n"%pid)
+        #Add process vector
+        vec = self.recover_process_vector(pid)
+        f.write("Process vector: %s\n"%','.join(vec))
+
     def exportUserListTxt(self,filename):
         try:
             #Opens the file in append mode aiming to keep the history 
@@ -230,32 +254,49 @@ class ProcessTrees:
                 if (len(self.get_children(pid)) == 0):
                     #Discard empty subtrees
                     continue
-        
-                f.write("** user root process %d **\n"%pid)
-                #See if some annotation is found for this pid
-                if self.aplist.has_key(pid):
-                    print "Found some annotations for",pid
-                    #Look for SSH variables in the first child process
-                    sshinfo = self.search_ssh_info(pid)
-                    if sshinfo:
-                        f.write("%s\n"%sshinfo)
-                    else:
-                        sys.stderr.write("No SSH information is there\n")
-                    if self.aplist[pid].has_key('timestamp'):
-                            #Convert timestamp
-                            ts = self.aplist[pid]['timestamp']
-                            obj=datetime.datetime.fromtimestamp(float(ts))
-                            f.write("Connection date:%s\n\n"%str(obj))
-                    else:
-                        f.write("No timestamp information is there\n")
-                else:
-                    sys.stderr.write("No annotations found for pid: %d\n"%pid)
+                self.desc_root_process(f,pid)
             f.close()
         except IOError,e:
             #TODO implement logging of internal errors
             #User should notice that there is something wrong when 
             #user lists are outdated or corrupted
             pass
+
+    def get_command_from_pid(self,pid):
+        if self.aplist.has_key(pid):
+            if self.aplist[pid].has_key('file'):
+                return self.aplist[pid]['file']
+            else:
+                sys.stderr.write('No file information for pid=%d\n'%pid)
+        else:
+            sys.stderr.write('pid %d was not annotated\n'%pid)
+        return None
+
+    def get_timestamp_from_pid(self,pid):
+        if self.aplist.has_key(pid):
+            if self.aplist[pid].has_key('timestamp'):
+                return self.aplist[pid]['timestamp']
+            else:
+                sys.stderr.write('No timestamp information for pid: %d\n'%pid)
+        else:
+            sys.stderr.write('pid %d was not annotated\n'%pid)
+        return -1
+
+    def recover_process_vector(self,pid):
+        vector = dict() # FIXME use timestamps as key for a dictionary
+        print "Children of ",pid," ",self.get_children(pid)
+        for pid in self.get_children(pid):
+            ts = self.get_timestamp_from_pid(pid)
+            file = self.get_command_from_pid(pid)
+            if ts != -1 and file != None:
+                vector[int(ts)] = file
+       #Now sort the vector    
+        tab = vector.keys()
+        tab.sort()
+        ret = []
+        for ts in tab:
+            ret.append(vector[ts])
+        return ret
 
 class TestProcessTree(unittest.TestCase):
     def testSearchRegular0(self):
