@@ -16,8 +16,8 @@ def extract_object(obj):
         ts = obj['timestamp']
         #handle sys_clone messages
         if (tp == 2):
-            ptress.searchTree(pid,ppid) 
-            return
+            ptress.searchTree(pid,ppid)
+            
         
         #handle sys_execve
         if (tp ==  1):
@@ -25,6 +25,7 @@ def extract_object(obj):
             if file == '/usr/sbin/sshd':
                 print "Potential new user found: pid=",pid,"ppid=",ppid
                 ptress.addUser(pid)
+                ptress.annotateProcessList(obj) 
                 return
             if ptress.searchTree(pid,ppid):
                 print "User related command: ",file,"pid=",pid," ppid=",ppid
@@ -52,4 +53,4 @@ except ValueError,e:
     print line
 
 #Dump process trees
-print ptress.exportUserListTxt('userlist.txt')
+ptress.exportUserListTxt('userlist.txt')

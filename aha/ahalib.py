@@ -145,7 +145,7 @@ class ProcessTrees:
                     if ev.startswith('SSH_CLIENT='):
                         ev = ev.replace('SSH_CLIENT=','')
                         self.aplist[pid]['ssh_client'] = ev
-                        #print "Annotated pid=", pid," ev",ev
+                        print "Annotated with ssh info pid=", pid," ev",ev
             # Is there a timestamp?
             if msg.has_key('timestamp'):
                 self.aplist[pid]['timestamp'] = msg['timestamp']
@@ -219,30 +219,23 @@ class ProcessTrees:
         except KeyError,e:
             pass
 
+    # Describe the root process 
+    # f is file object
+    # pid is the root process
     def desc_root_process(self,f,pid):
         f.write("** user root process %d **\n"%pid)
-        #See if some annotation is found for this pid
-        if self.aplist.has_key(pid):
-            print "Found some annotations for",pid
-            #Look for SSH variables in the first child process
-            sshinfo = self.search_ssh_info(pid)
-            if sshinfo:
-                f.write("%s\n"%sshinfo)
-            else:
-                sys.stderr.write("No SSH information is there\n")
-                if self.aplist[pid].has_key('timestamp'):
-                    #Convert timestamp
-                    ts = self.aplist[pid]['timestamp']
-                    obj=datetime.datetime.fromtimestamp(float(ts))
-                    f.write("Connection date:%s\n\n"%str(obj))
-                else:
-                    f.write("No timestamp information is there\n")
-        else:
-            sys.stderr.write("No annotations found for pid: %d\n"%pid)
+        sshinfo = self.search_ssh_info(pid)
+        if sshinfo:
+            f.write("SSH_client: %s\n"%sshinfo)
+        ts = self.get_timestamp_from_pid(pid)
+        print "11111",ts
+        if ts >0:
+            obj=datetime.datetime.fromtimestamp(float(ts))
+            f.write("Connection date: %s\n"%str(obj))
         #Add process vector
         vec = self.recover_process_vector(pid)
         f.write("Process vector: %s\n"%','.join(vec))
-
+        f.write('\n')
     def exportUserListTxt(self,filename):
         try:
             #Opens the file in append mode aiming to keep the history 
