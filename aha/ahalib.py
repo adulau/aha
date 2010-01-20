@@ -134,6 +134,8 @@ class ProcessTrees:
             if self.aplist.has_key(pid) == False:
                 #Got a new process, so create a new dictionary for meta data
                 self.aplist[pid] = dict()
+            #Store the parent
+            self.aplist[pid]['parent'] = ppid
             #Does the message  has a file name ?
             if msg.has_key('file'):
                 self.aplist[pid]['file'] = msg['file'][0]
@@ -300,10 +302,37 @@ class ProcessTrees:
                 ret.append(c)
         return ret
 
+    #Recursively get the children of a process. This time from the annotated 
+    #list. 
+    #Internal function
+    def __get_aplist_children(self,pid):
+        #Establish a list of children for a process
+        children = []
+        #FIXME not efficient; Go through all the processes
+        for p in self.aplist.keys():
+            if  self.aplist[p]['parent'] == pid:
+                children.append(p)
+                #Record them in a global list too
+                self.children[p]=1
+        if len(children) == 0:
+            return
+        #Go through the children list and do a recursion
+        for p in children:
+            self.__get_aplist_children(p) 
+        
+    def get__aplist_children(self,pid):
+        #Empty the list; do not want duplicates
+        self.children = dict()
+        self.__get_aplist_children(pid)
+        return self.children.keys()
+
     #Pid is the root; remove this pid and all chidren
     def clean_aplist(self,pid):
-        #aplist needs to be cleaned up  else process recycling is worse
-        pass    
+        children = self.get__aplist_children(pid)
+        print "Removal candidates"
+        for pid in children:
+            self.aplist.pop(pid)
+        
 class TestProcessTree(unittest.TestCase):
     def testSearchRegular0(self):
         x = ProcessTrees()

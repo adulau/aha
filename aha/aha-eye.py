@@ -32,15 +32,21 @@ def extract_object(obj):
                 #Annotation info is only available in sys_execve messages
                 print "annotate process ",pid
                 ptress.annotateProcessList(obj)                   
+        #But need to record ppid for pid reusage .grrr
+        if (tp == 2):
+            if (ptress.searchTree(pid,ppid)):
+                ptress.annotateProcessList(obj)
         # Thread exited
         if (tp == 3):
             if ptress.does_user_disconnects(pid):
                 #User disconnected generate a report, to avoid that other 
                 #information is droped
-                print "List export is triggered"
+                print "List export is triggered for root ",pid
                 ptress.exportUserListTxt('userlist.txt')
                 ptress.silent_remove_pid(pid)
-
+                #Cleanup annotated list
+                print "Clean annotated list"
+                ptress.clean_aplist(pid)
     except ValueError,e:
         print "Failed to parse ",obj
     except KeyError,e:
