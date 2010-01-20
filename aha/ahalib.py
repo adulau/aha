@@ -226,6 +226,11 @@ class ProcessTrees:
             ts =  time.strftime("%Y-%m-%d %H:%M:%S") 
             f.write("*** UserList created on %s ***\n"%(str(ts)))
             for pid in self.userList.keys():
+                #Each sshd clone is not necessarly related to a user
+                if (len(self.get_children(pid)) == 0):
+                    #Discard empty subtrees
+                    continue
+        
                 f.write("** user root process %d **\n"%pid)
                 #See if some annotation is found for this pid
                 if self.aplist.has_key(pid):
