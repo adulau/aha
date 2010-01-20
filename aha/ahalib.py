@@ -300,6 +300,10 @@ class ProcessTrees:
                 ret.append(c)
         return ret
 
+    #Pid is the root; remove this pid and all chidren
+    def clean_aplist(self,pid):
+        #aplist needs to be cleaned up  else process recycling is worse
+        pass    
 class TestProcessTree(unittest.TestCase):
     def testSearchRegular0(self):
         x = ProcessTrees()
