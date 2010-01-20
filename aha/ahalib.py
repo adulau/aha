@@ -64,6 +64,8 @@ class AHAActions:
         sd = str(obj)
         return "%s|%s|%s\n"%(sd,fn,data);
 
+    def unserializeMessage(self,serobj):
+        return json.loads(serobj)
     #Can throw IOError
     #FIXME not tested
     def get_kernel_reply(self,filename):
@@ -108,15 +110,14 @@ class ProcessTrees:
     #SSH specific environment variables. Therefore ask all the
     #children
     def search_ssh_info(self,pid):
-        print "Searching info for ",pid
+        #print "Searching info for ",pid
         children = self.get_children(pid)
-        print "Children of pid",children
-        print type(children)
+        #print "Children of pid",children
         for child in children:
             if self.aplist.has_key(child):
-                print "Found annotations for child %d"%child
+                #print "Found annotations for child %d"%child
                 if self.aplist[child].has_key('ssh_client'):
-                    print "Found ssh info for child %d"%child
+                    #print "Found ssh info for child %d"%child
                     return self.aplist[child]['ssh_client']
         # Retuns None if ssh related information was not found
         sys.stderr.write('ERROR: No child provided SSH information\n')
@@ -136,7 +137,7 @@ class ProcessTrees:
             #Does the message  has a file name ?
             if msg.has_key('file'):
                 self.aplist[pid]['file'] = msg['file'][0]
-                print "Annotated pid=",pid, "file=",msg['file'][0]
+                #print "Annotated pid=",pid, "file=",msg['file'][0]
             #Does the message has SSH related information?
             if msg.has_key('env'):
                 # Go through the environment list
@@ -144,7 +145,7 @@ class ProcessTrees:
                     if ev.startswith('SSH_CLIENT='):
                         ev = ev.replace('SSH_CLIENT=','')
                         self.aplist[pid]['ssh_client'] = ev
-                        print "Annotated pid=", pid," ev",ev
+                        #print "Annotated pid=", pid," ev",ev
             # Is there a timestamp?
             if msg.has_key('timestamp'):
                 self.aplist[pid]['timestamp'] = msg['timestamp']
