@@ -37,6 +37,7 @@ class AHAActions:
        
     #Can trow IOError
     def create_message(self,filename,block,exitcode,substitue,insult):
+        print "CREATE_MESSAGE ",filename,"block=",block
         try:
             reply = ReplyMessage(block=block,exitcode=exitcode,substitue=substitue,
                                  insult = insult)

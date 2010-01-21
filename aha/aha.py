@@ -9,12 +9,39 @@ from ahalib import *
 
 class KernelEvents(ProcessEvent):
 
-    def __init__(self,inqueue,outqueue,insultmaxidx):
+    def __init__(self,inqueue,outqueue,insultmaxidx,cases,block):
         self.ahaa = AHAActions(inqueue,outqueue)
+        self.cases = cases
+        self.block = block
         self.processtrees = ProcessTrees()
 
+    #Blocks the sys_execve calls according the game
+    def play(self):
+        #By default allow the system call
+        print "PLAY: mixed cases ",cases
+        print "PLAY: blockpr", blockpr
+        b = 0
+        x = random.random()
+         
+        if x < self.cases:
+            print "PLAY: Cases choice: ",x
+            #i.e. in 0.54 blocking probability of 0.1 should be used
+            y = random.random()
+            print "PLAY: Blocking choice",y
+            if y < self.block:
+                b = 1
+        else:
+            # in the other cases another blocking probability should be used
+            y = random.random()
+            q = 1-self.block
+            print "PLAY: Other blocking probability should be used ",q
+            print "PLAY: Other blocking choice: ",y
+            if y < q:
+                b = 1
+                
+        return b
+
     def decision(self,filekey,msg):
-        print filekey
         try:
             pid = int(msg['pid'][0])
             ppid = int(msg['ppid'][0])
@@ -26,7 +53,7 @@ class KernelEvents(ProcessEvent):
             if type == 1:
                 # Got sys_execve
                 command = msg['file'][0]
-                print "Got command: ",command
+                print "Got command: ",command, "in ",filekey
                 #Is there a new SSH connection?
                 if msg['file'][0] == '/usr/sbin/sshd':
                     print "New user found pid=",pid,",ppid=",ppid
@@ -37,7 +64,7 @@ class KernelEvents(ProcessEvent):
 
             #is this process induced by clone or sys_execve related to a user?
             if self.processtrees.searchTree(pid,ppid) == False:
-                #print "Process belongs to the system, allow it"
+                print "Process belongs to the system, allow it"
                 #Note the process could also belong to a local
                 #connected user
                 self.ahaa.create_message(filekey,block=0, exitcode=0,
@@ -45,7 +72,18 @@ class KernelEvents(ProcessEvent):
                 return
             else:
                 print "Process belongs to a user, play"
-           #TODO add default action
+                shouldBlock = self.play()
+                if shouldBlock:
+                    print "User process is artifically blocked ..."
+                    self.ahaa.create_message(filekey,block=1, 
+                                        exitcode=KERNEL_ERRORS.EACESS,insult=0,
+                                        substitue=0)
+                    return 
+                else:
+                    print "User process is allowed ..."
+                    self.ahaa.create_message(filekey,block=0,exitcode=0,insult=0,
+                                        substitue=0)
+                    return
         except KeyError,e:
             print "EXCEPTION: KeyError"
         except IndexError,w:
@@ -104,12 +142,15 @@ if __name__ == '__main__':
         inqueue = c.get('common','inqueue')
         outqueue  = c.get('common','outqueue')
         insultmaxidx = int(c.get('insults','maxidx'))
+        cases = float(c.get('game','cases'))
+        blockpr = float(c.get('game','block'))
 
         print "Setting up listeners..."
         wm = WatchManager()
         mask = IN_CLOSE_WRITE  # watched events
 
-        notifier = Notifier(wm, KernelEvents(inqueue,outqueue,insultmaxidx))
+        notifier = Notifier(wm, KernelEvents(inqueue,outqueue,insultmaxidx,
+                            cases,blockpr))
         wdd = wm.add_watch(outqueue, mask, rec=True)
 
         print "Waiting for events..."
