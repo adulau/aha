@@ -1,6 +1,11 @@
 #!/usr/bin/python
 #Analyse log files generated from aha-worker and generate reports
+#FIXME If a PID is reused during an SSH sessions aha might be confused
+#a better solution than shadowing the process list is to contruct the
+#process vectors on the fly
+
 from ahalib import *
+
 logfile='aha.log'
 aha = AHAActions('../in','../out')
 ptress = ProcessTrees()
