@@ -36,6 +36,8 @@ class PeriodTaks():
     def remove_old_msg(self,queue):
         #Get current date if the files are older than the timeout remove them
         t0 = int(time.strftime("%s"))
+        #FIXME os.walkdir, os.listdir could also be used
+        dircache.reset()
         files = dircache.listdir(queue)
         for file in files:
             af = queue + os.sep + file
