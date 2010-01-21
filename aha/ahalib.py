@@ -230,6 +230,12 @@ class ProcessTrees:
     # f is file object
     # pid is the root process
     def desc_root_process(self,f,pid):
+        vec = self.recover_process_vector(pid)
+        #Sometimes SSHD clones processes that are not related 
+        #to users, small trees about a length of 2
+        if (len(vec) == 0):
+            return
+
         f.write("** user root process %d **\n"%pid)
         sshinfo = self.search_ssh_info(pid)
         if sshinfo:
@@ -240,7 +246,6 @@ class ProcessTrees:
             obj=datetime.datetime.fromtimestamp(float(ts))
             f.write("Connection date: %s\n"%str(obj))
         #Add process vector
-        vec = self.recover_process_vector(pid)
         f.write("Process vector: %s\n"%','.join(vec))
         f.write('\n')
     def exportUserListTxt(self,filename):
