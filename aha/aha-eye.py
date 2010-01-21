@@ -6,7 +6,7 @@
 
 from ahalib import *
 import getopt
-logfile='aha.log'
+#logfile='aha.log'
 aha = AHAActions(None,None)
 ptress = ProcessTrees()
 
@@ -106,9 +106,9 @@ try:
     sys.exit(0)
 except ValueError,e:
     #File may be incomplete
-    sys.stderr("Value error, file may be incomplete\n")
+    sys.stderr.write("Value error, file may be incomplete\n")
     sys.stderr.write(str(e) + '\n')
-    sys.stderr.write(line)
+    sys.stderr.write(line+'\n')
 
 except getopt.GetoptError,e:
     sys.stderr.write(str(e)+'\n')
