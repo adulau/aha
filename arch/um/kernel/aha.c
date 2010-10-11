@@ -32,7 +32,8 @@ inline void __aha_os_write_file_ck(int fd, char* buf, int size, int cnt)
     if ((cnt > 0) & (cnt < size)){
         os_write_file(fd,buf,cnt);
     } else {
-        AHA_PRINTK("Failed to write information\n");
+        AHA_PRINTK("Cannot write. buffer is too small size = %d cnt=%d, \
+                   fd=%d\n", size, cnt,fd);
     }
 }
 

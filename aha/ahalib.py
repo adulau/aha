@@ -34,10 +34,11 @@ class AHAActions:
         except OSError,e:
             pass
 
-       
+
     #Can trow IOError
     def create_message(self,filename,block,exitcode,substitue,insult):
-        print "CREATE_MESSAGE ",filename,"block=",block
+        print "CREATE_MESSAGE ",filename,"block=",block, "insult=",insult,\
+              "substitue=",substitue
         try:
             reply = ReplyMessage(block=block,exitcode=exitcode,substitue=substitue,
                                  insult = insult)
@@ -123,7 +124,7 @@ class ProcessTrees:
         # Retuns None if ssh related information was not found
         sys.stderr.write('ERROR: No child provided SSH information\n')
         return None
-        
+
     # Record additional information about processes like SSH parameters
     # and timestamps etc
     #TODO annotate SSH_LOGNAME
@@ -152,7 +153,7 @@ class ProcessTrees:
             # Is there a timestamp?
             if msg.has_key('timestamp'):
                 self.aplist[pid]['timestamp'] = msg['timestamp']
- 
+
         except ValueError,e:
             print e
             pass
@@ -204,8 +205,8 @@ class ProcessTrees:
             return
         #Go through the children list and do a recursion
         for p in children:
-            self.__get_children(p) 
-        
+            self.__get_children(p)
+
     def get_children(self,pid):
         #Empty the list; do not want duplicates
         self.children = dict()
@@ -225,14 +226,14 @@ class ProcessTrees:
     def does_user_disconnects(self,pid):
         if self.userList.has_key(pid):
             return True
-        else: 
+        else:
             return False
-    # Describe the root process 
+    # Describe the root process
     # f is file object
     # pid is the root process
     def desc_root_process(self,f,pid):
         vec = self.recover_process_vector(pid)
-        #Sometimes SSHD clones processes that are not related 
+        #Sometimes SSHD clones processes that are not related
         #to users, small trees about a length of 2
         if (len(vec) == 0):
             return
@@ -251,9 +252,9 @@ class ProcessTrees:
         f.write('\n')
     def exportUserListTxt(self,filename):
         try:
-            #Opens the file in append mode aiming to keep the history 
+            #Opens the file in append mode aiming to keep the history
             f = open(filename, 'a')
-            ts =  time.strftime("%Y-%m-%d %H:%M:%S") 
+            ts =  time.strftime("%Y-%m-%d %H:%M:%S")
             f.write("*** UserList created on %s ***\n"%(str(ts)))
             for pid in self.userList.keys():
                 #Each sshd clone is not necessarly related to a user
@@ -264,7 +265,7 @@ class ProcessTrees:
             f.close()
         except IOError,e:
             #TODO implement logging of internal errors
-            #User should notice that there is something wrong when 
+            #User should notice that there is something wrong when
             #user lists are outdated or corrupted
             pass
 
@@ -299,7 +300,7 @@ class ProcessTrees:
                 if vector.has_key(its) == False:
                     vector[its] = []
                 vector[its].append(file)
-       #Now sort the vector    
+       #Now sort the vector
         tab = vector.keys()
         tab.sort()
         ret = []
@@ -308,8 +309,8 @@ class ProcessTrees:
                 ret.append(c)
         return ret
 
-    #Recursively get the children of a process. This time from the annotated 
-    #list. 
+    #Recursively get the children of a process. This time from the annotated
+    #list.
     #Internal function
     def __get_aplist_children(self,pid):
         #Establish a list of children for a process
@@ -324,8 +325,8 @@ class ProcessTrees:
             return
         #Go through the children list and do a recursion
         for p in children:
-            self.__get_aplist_children(p) 
-        
+            self.__get_aplist_children(p)
+
     def get__aplist_children(self,pid):
         #Empty the list; do not want duplicates
         self.children = dict()
@@ -338,7 +339,7 @@ class ProcessTrees:
         print "Removal candidates"
         for pid in children:
             self.aplist.pop(pid)
-        
+
 class TestProcessTree(unittest.TestCase):
     def testSearchRegular0(self):
         x = ProcessTrees()
@@ -430,7 +431,7 @@ class TestProcessTree(unittest.TestCase):
 
         ret = x.searchTree(334,123)
         self.assertEqual(ret,1)
-        
+
         #First child has onother child
         ret = x.searchTree(555,333)
         self.assertEqual(ret,1)
@@ -442,8 +443,8 @@ class TestProcessTree(unittest.TestCase):
         ret = x.searchTree(1001,1000)
         self.assertEqual(ret,1)
         children = x.get_children(123)
-        #[666, 555, 333, 334] 
-        self.assertEqual(len(children), 4) 
+        #[666, 555, 333, 334]
+        self.assertEqual(len(children), 4)
         self.assertEqual(children[0],666)
         self.assertEqual(children[1],555)
         self.assertEqual(children[2],333)
@@ -452,7 +453,7 @@ class TestProcessTree(unittest.TestCase):
         x= ProcessTrees()
         children = x.get_children(999)
         self.assertEqual(len(children),0)
-    
+
 if __name__ == '__main__':
     unittest.main()
 

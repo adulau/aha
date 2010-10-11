@@ -7,7 +7,7 @@
 #include "os.h"
 #include "linux/delay.h"
 #include "aha-defs.h"
-#define MAX_DUMP_BUF 512
+#define MAX_DUMP_BUF 1024
 struct ReplyMessage{
     int block;
     int exitcode;
@@ -17,7 +17,7 @@ struct ReplyMessage{
 
 #define EXECVE_MESSAGE 1
 #define CLONE_MESSAGE  2
-#define EXIT_MESSAGE   3 
+#define EXIT_MESSAGE   3
 #ifdef AHA_DEBUG
     #define AHA_PRINTK(args...) printk(args)
 #else
