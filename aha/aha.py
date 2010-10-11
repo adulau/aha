@@ -6,41 +6,49 @@ import os,sys,random,getopt,ConfigParser
 from pyinotify import *
 from ctypes import *
 from ahalib import *
-
+import sqlite3,os.path
+database = '../gui.db'
 class KernelEvents(ProcessEvent):
 
     def __init__(self,inqueue,outqueue,insultmaxidx,cases,block):
         self.ahaa = AHAActions(inqueue,outqueue)
-        self.cases = cases
-        self.block = block
         self.processtrees = ProcessTrees()
-
-    #Blocks the sys_execve calls according the game
-    def play(self):
-        #By default allow the system call
-        print "PLAY: mixed cases ",cases
-        print "PLAY: blockpr", blockpr
-        b = 0
-        x = random.random()
-         
-        if x < self.cases:
-            print "PLAY: Cases choice: ",x
-            #i.e. in 0.54 blocking probability of 0.1 should be used
-            y = random.random()
-            print "PLAY: Blocking choice",y
-            if y < self.block:
-                b = 1
+        if os.path.exists(database):
+            self.con = sqlite3.connect(database)
         else:
-            # in the other cases another blocking probability should be used
-            y = random.random()
-            q = 1-self.block
-            print "PLAY: Other blocking probability should be used ",q
-            print "PLAY: Other blocking choice: ",y
-            if y < q:
-                b = 1
-                
-        return b
+            self.con = None
+            print "[ERROR]  Database file not found  ",database
 
+    def askgui(self, filekey,msg):
+        if self.con == None:
+            return False
+        cur = self.con.cursor()
+        program = os.path.basename(msg['file'][0])
+        args = ','.join(msg['argument'][1:])
+        #Update the gui shell
+        outstr = program + "(" + args + ")"
+        print "######### User wants to execute ",outstr
+        cur.execute('INSERT INTO shell (cmd) VALUES (?)',[outstr])
+        self.con.commit()
+        #Lets see what the user has defined
+        action = 0
+        for row in  cur.execute('SELECT action FROM perms WHERE cmd=?',[program]):
+            action = int(row[0])
+        if action == 0:
+            self.ahaa.create_message(filekey,block=0,exitcode=0, insult=0,substitue=0)
+            print "##### Allowed action"
+            return True
+        if action == 1:
+            self.ahaa.create_message(filekey, block=1,exitcode=1, insult=0, substitue=0)
+            print "##### Blocked action"
+            return True
+        if action == 2:
+            self.ahaa.create_message(filekey, block=0, exitcode=0, insult=2, substitue=0)
+            print "##### Insulted user"
+            return True
+        #Exception handling is done in decision method
+        #By default no decision was taken
+        return False
     def decision(self,filekey,msg):
         try:
             pid = int(msg['pid'][0])
@@ -71,19 +79,12 @@ class KernelEvents(ProcessEvent):
                                          insult=0, substitue=0)
                 return
             else:
-                print "Process belongs to a user, play"
-                shouldBlock = self.play()
-                if shouldBlock:
-                    print "User process is artifically blocked ..."
-                    self.ahaa.create_message(filekey,block=1, 
-                                        exitcode=KERNEL_ERRORS.EACESS,insult=0,
-                                        substitue=0)
-                    return 
-                else:
-                    print "User process is allowed ..."
-                    self.ahaa.create_message(filekey,block=0,exitcode=0,insult=0,
-                                        substitue=0)
-                    return
+                if msg.has_key('file'):
+                    r = self.askgui(filekey,msg)
+                    if r:
+                        print "#A message was sent return"
+                        return
+
         except KeyError,e:
             print "EXCEPTION: KeyError"
         except IndexError,w:
