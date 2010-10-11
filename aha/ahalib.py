@@ -37,8 +37,6 @@ class AHAActions:
 
     #Can trow IOError
     def create_message(self,filename,block,exitcode,substitue,insult):
-        print "CREATE_MESSAGE ",filename,"block=",block, "insult=",insult,\
-              "substitue=",substitue
         try:
             reply = ReplyMessage(block=block,exitcode=exitcode,substitue=substitue,
                                  insult = insult)
@@ -48,6 +46,8 @@ class AHAActions:
             f.close()
             reply="(key=%s, block=%d,exitcode=%d,substitue=%d,insult=%d)"\
                    %(filename,block,exitcode, substitue,insult)
+            #print "CREATE_MESSAGE ",filename,"block=",block, "insult=",insult,\
+            #"substitue=",substitue
             return reply
         except IOError,e:
             sys.stderr.write('Could not create reply file=(%s)\n'%filename)

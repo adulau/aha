@@ -6,6 +6,7 @@ import os,sys,random,getopt,ConfigParser
 from pyinotify import *
 from ctypes import *
 from ahalib import *
+import sys
 import sqlite3,os.path
 database = '../gui.db'
 class KernelEvents(ProcessEvent):
@@ -15,40 +16,47 @@ class KernelEvents(ProcessEvent):
         self.processtrees = ProcessTrees()
         if os.path.exists(database):
             self.con = sqlite3.connect(database)
+            #Do it here to win time
+            self.cur = self.con.cursor()
         else:
-            self.con = None
             print "[ERROR]  Database file not found  ",database
+            sys.exit(1)
 
     def askgui(self, filekey,msg):
-        if self.con == None:
-            return False
-        cur = self.con.cursor()
+        ret = False
         program = os.path.basename(msg['file'][0])
         args = ','.join(msg['argument'][1:])
-        #Update the gui shell
-        outstr = program + "(" + args + ")"
-        print "######### User wants to execute ",outstr
-        cur.execute('INSERT INTO shell (cmd) VALUES (?)',[outstr])
-        self.con.commit()
         #Lets see what the user has defined
         action = 0
-        for row in  cur.execute('SELECT action FROM perms WHERE cmd=?',[program]):
+        for row in  self.cur.execute('SELECT action FROM perms WHERE cmd=?',[program]):
             action = int(row[0])
         if action == 0:
-            self.ahaa.create_message(filekey,block=0,exitcode=0, insult=0,substitue=0)
-            print "##### Allowed action"
-            return True
+            #Message is allowed
+            self.ahaa.create_message(filekey,block=0,exitcode=0, insult=0,
+                                     substitue=0)
+            ret = True
         if action == 1:
-            self.ahaa.create_message(filekey, block=1,exitcode=1, insult=0, substitue=0)
-            print "##### Blocked action"
-            return True
+            #Message is blocked
+            self.ahaa.create_message(filekey, block=1,
+                                     exitcode=KERNEL_ERRORS.EACESS, insult=0,
+                                     substitue=0)
+            ret = True
         if action == 2:
-            self.ahaa.create_message(filekey, block=0, exitcode=0, insult=2, substitue=0)
-            print "##### Insulted user"
-            return True
+            #User is insulted
+            self.ahaa.create_message(filekey, block=0, exitcode=0, insult=2,
+                                     substitue=0)
+            ret = True
+
+        #Update the gui shell this takes time but the message had already
+        #been transmitted to the kernel
+        outstr = program + "(" + args + ")"
+        self.cur.execute('INSERT INTO shell (cmd) VALUES (?)',[outstr])
+        self.con.commit()
+        #FIXME If fallback of decision to allow it is anyhow too late
+        #Therefore allows the kernel by it self the execution
+        return ret
         #Exception handling is done in decision method
-        #By default no decision was taken
-        return False
+
     def decision(self,filekey,msg):
         try:
             pid = int(msg['pid'][0])
@@ -61,28 +69,26 @@ class KernelEvents(ProcessEvent):
             if type == 1:
                 # Got sys_execve
                 command = msg['file'][0]
-                print "Got command: ",command, "in ",filekey
                 #Is there a new SSH connection?
                 if msg['file'][0] == '/usr/sbin/sshd':
-                    print "New user found pid=",pid,",ppid=",ppid
                     self.processtrees.addUser(pid)
                     self.ahaa.create_message(filekey,block=0, exitcode=0,
                                              insult=0, substitue=0)
+                    #print "New user found pid=",pid,",ppid=",ppid
                     return
 
             #is this process induced by clone or sys_execve related to a user?
             if self.processtrees.searchTree(pid,ppid) == False:
-                print "Process belongs to the system, allow it"
                 #Note the process could also belong to a local
                 #connected user
                 self.ahaa.create_message(filekey,block=0, exitcode=0,
                                          insult=0, substitue=0)
+                #print "Process belongs to the system, allow it"
                 return
             else:
                 if msg.has_key('file'):
                     r = self.askgui(filekey,msg)
                     if r:
-                        print "#A message was sent return"
                         return
 
         except KeyError,e:
