@@ -1,6 +1,7 @@
 #ifndef AHA
 #define AHA
-#define AHA_DEBUG
+/* Debug messages are disabled */
+/* #define AHA_DEBUG */
 #include "linux/kernel.h" /* printk is declared there */
 #include "linux/stddef.h"
 #include "linux/ptrace.h" /* access to kmalloc */
