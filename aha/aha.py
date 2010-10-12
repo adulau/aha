@@ -7,19 +7,21 @@ from pyinotify import *
 from ctypes import *
 from ahalib import *
 import sys
+import os
 import sqlite3,os.path
-database = '../gui.db'
 class KernelEvents(ProcessEvent):
 
-    def __init__(self,inqueue,outqueue,insultmaxidx,cases,block):
+    def __init__(self,inqueue,outqueue,insultmaxidx, guidb):
         self.ahaa = AHAActions(inqueue,outqueue)
+        self.database = guidb
         self.processtrees = ProcessTrees()
-        if os.path.exists(database):
-            self.con = sqlite3.connect(database)
+        if os.path.exists(self.database):
+            self.con = sqlite3.connect(self.database)
             #Do it here to win time
             self.cur = self.con.cursor()
         else:
-            print "[ERROR]  Database file not found  ",database
+            os.system('pwd')
+            print "[ERROR]  Database file not found  ",self.database
             sys.exit(1)
 
     def askgui(self, filekey,msg):
@@ -149,15 +151,14 @@ if __name__ == '__main__':
         inqueue = c.get('common','inqueue')
         outqueue  = c.get('common','outqueue')
         insultmaxidx = int(c.get('insults','maxidx'))
-        cases = float(c.get('game','cases'))
-        blockpr = float(c.get('game','block'))
-
+        guidb = c.get('gui','database')
         print "Setting up listeners..."
         wm = WatchManager()
         mask = IN_CLOSE_WRITE  # watched events
 
-        notifier = Notifier(wm, KernelEvents(inqueue,outqueue,insultmaxidx,
-                            cases,blockpr))
+        k = KernelEvents(inqueue, outqueue,insultmaxidx,guidb)
+        #If database is not valid exit here
+        notifier = Notifier(wm,k)
         wdd = wm.add_watch(outqueue, mask, rec=True)
 
         print "Waiting for events..."

@@ -219,7 +219,7 @@ class ProcessTrees:
                 self.processList.pop(pid)
             if self.userList.has_key(pid):
                self.userList.pop(pid)
-               print "User in process ",pid," pid disconnected"
+               #print "User in process ",pid," pid disconnected"
         except KeyError,e:
             pass
 
