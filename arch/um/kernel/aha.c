@@ -32,8 +32,7 @@ inline void __aha_os_write_file_ck(int fd, char* buf, int size, int cnt)
     if ((cnt > 0) & (cnt < size)){
         os_write_file(fd,buf,cnt);
     } else {
-        AHA_PRINTK("Cannot write. buffer is too small size = %d cnt=%d, \
-                   fd=%d\n", size, cnt,fd);
+        AHA_PRINTK("Failed to write information\n");
     }
 }
 
@@ -48,7 +47,6 @@ inline void __aha_dump_pid_ppids(int fd, char* buf, int size)
     int cnt;
     tsk = current;
     cnt = snprintf(buf,size,"pid=%d\n",tsk->pid);
-    AHA_PRINTK("__aha_dump_pid_ppids\n");
     __aha_os_write_file_ck(fd,buf,size,cnt);
     cnt = snprintf(buf,size,"ppid=%d\n",tsk->parent->pid);
     __aha_os_write_file_ck(fd,buf,size,cnt);
@@ -61,7 +59,6 @@ inline void  __aha_set_done_tag(int fd, char* buf,int size)
     int cnt;
     /* FIXME the MAGIC word is not escaped it could emerge as argument */
     cnt = snprintf(buf,size,"DONE=1\n");
-    AHA_PRINTK("__aha_set_done_tag\n");
     __aha_os_write_file_ck(fd,buf,size,cnt);
 
 }
@@ -71,9 +68,7 @@ inline void  __aha_set_type_tag(int fd, char* buf,int size,int tag)
     int cnt; /* May break inline but makes code more readable */
     /* FIXME Espacing is not done */
     cnt = snprintf(buf,size,"type=%d\n",tag);
-    AHA_PRINTK("__aha_set_type_tag\n");
-     __aha_os_write_file_ck(fd,buf,size,cnt);
-
+    __aha_os_write_file_ck(fd,buf,size,cnt);
 
 }
 
@@ -82,13 +77,12 @@ inline void __aha_dump_str_array(int fd, char** argv,char*id, char* p, char*q)
 {
     char* a;
     int cnt;
-    AHA_PRINTK("__aha_dump_str_array\n");
     for (;;) {
         if (get_user(a,argv))
             break;
             if (!a)
                 break;
-            if (strncpy_from_user(p,a, (MAX_DUMP_BUF / 2) - 4  ) > 0) {
+            if (strncpy_from_user(p,a, MAX_DUMP_BUF) > 0) {
                 cnt=snprintf(q,MAX_DUMP_BUF,"%s=%s\n",id,p);
                 __aha_os_write_file_ck(fd,q,MAX_DUMP_BUF,cnt);
             }
@@ -219,7 +213,7 @@ void aha_record_sys_clone(int pid, int ppid)
     flg.w = 1;
     flg.c = 1;
     cnt = 0;
-    AHA_PRINTK("aha_record_sys_clone\n");
+
     aha_create_filename((char*)&filename,filename__size);
     snprintf((char*)&buf, buf__size,"out/%s",filename);
     fd = os_open_file(buf,flg,mode);

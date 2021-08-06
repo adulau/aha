@@ -6,58 +6,40 @@ import os,sys,random,getopt,ConfigParser
 from pyinotify import *
 from ctypes import *
 from ahalib import *
-import sys
-import os
-import sqlite3,os.path
+
 class KernelEvents(ProcessEvent):
 
-    def __init__(self,inqueue,outqueue,insultmaxidx, guidb):
+    def __init__(self,inqueue,outqueue,insultmaxidx,cases,block):
         self.ahaa = AHAActions(inqueue,outqueue)
-        self.database = guidb
+        self.cases = cases
+        self.block = block
         self.processtrees = ProcessTrees()
-        if os.path.exists(self.database):
-            self.con = sqlite3.connect(self.database)
-            #Do it here to win time
-            self.cur = self.con.cursor()
+
+    #Blocks the sys_execve calls according the game
+    def play(self):
+        #By default allow the system call
+        print "PLAY: mixed cases ",cases
+        print "PLAY: blockpr", blockpr
+        b = 0
+        x = random.random()
+         
+        if x < self.cases:
+            print "PLAY: Cases choice: ",x
+            #i.e. in 0.54 blocking probability of 0.1 should be used
+            y = random.random()
+            print "PLAY: Blocking choice",y
+            if y < self.block:
+                b = 1
         else:
-            os.system('pwd')
-            print "[ERROR]  Database file not found  ",self.database
-            sys.exit(1)
-
-    def askgui(self, filekey,msg):
-        ret = False
-        program = os.path.basename(msg['file'][0])
-        args = ','.join(msg['argument'][1:])
-        #Lets see what the user has defined
-        action = 0
-        for row in  self.cur.execute('SELECT action FROM perms WHERE cmd=?',[program]):
-            action = int(row[0])
-        if action == 0:
-            #Message is allowed
-            self.ahaa.create_message(filekey,block=0,exitcode=0, insult=0,
-                                     substitue=0)
-            ret = True
-        if action == 1:
-            #Message is blocked
-            self.ahaa.create_message(filekey, block=1,
-                                     exitcode=KERNEL_ERRORS.EACESS, insult=0,
-                                     substitue=0)
-            ret = True
-        if action == 2:
-            #User is insulted
-            self.ahaa.create_message(filekey, block=0, exitcode=0, insult=2,
-                                     substitue=0)
-            ret = True
-
-        #Update the gui shell this takes time but the message had already
-        #been transmitted to the kernel
-        outstr = program + "(" + args + ")"
-        self.cur.execute('INSERT INTO shell (cmd) VALUES (?)',[outstr])
-        self.con.commit()
-        #FIXME If fallback of decision to allow it is anyhow too late
-        #Therefore allows the kernel by it self the execution
-        return ret
-        #Exception handling is done in decision method
+            # in the other cases another blocking probability should be used
+            y = random.random()
+            q = 1-self.block
+            print "PLAY: Other blocking probability should be used ",q
+            print "PLAY: Other blocking choice: ",y
+            if y < q:
+                b = 1
+                
+        return b
 
     def decision(self,filekey,msg):
         try:
@@ -71,28 +53,37 @@ class KernelEvents(ProcessEvent):
             if type == 1:
                 # Got sys_execve
                 command = msg['file'][0]
+                print "Got command: ",command, "in ",filekey
                 #Is there a new SSH connection?
                 if msg['file'][0] == '/usr/sbin/sshd':
+                    print "New user found pid=",pid,",ppid=",ppid
                     self.processtrees.addUser(pid)
                     self.ahaa.create_message(filekey,block=0, exitcode=0,
                                              insult=0, substitue=0)
-                    #print "New user found pid=",pid,",ppid=",ppid
                     return
 
             #is this process induced by clone or sys_execve related to a user?
             if self.processtrees.searchTree(pid,ppid) == False:
+                print "Process belongs to the system, allow it"
                 #Note the process could also belong to a local
                 #connected user
                 self.ahaa.create_message(filekey,block=0, exitcode=0,
                                          insult=0, substitue=0)
-                #print "Process belongs to the system, allow it"
                 return
             else:
-                if msg.has_key('file'):
-                    r = self.askgui(filekey,msg)
-                    if r:
-                        return
-
+                print "Process belongs to a user, play"
+                shouldBlock = self.play()
+                if shouldBlock:
+                    print "User process is artifically blocked ..."
+                    self.ahaa.create_message(filekey,block=1, 
+                                        exitcode=KERNEL_ERRORS.EACESS,insult=0,
+                                        substitue=0)
+                    return 
+                else:
+                    print "User process is allowed ..."
+                    self.ahaa.create_message(filekey,block=0,exitcode=0,insult=0,
+                                        substitue=0)
+                    return
         except KeyError,e:
             print "EXCEPTION: KeyError"
         except IndexError,w:
@@ -151,14 +142,15 @@ if __name__ == '__main__':
         inqueue = c.get('common','inqueue')
         outqueue  = c.get('common','outqueue')
         insultmaxidx = int(c.get('insults','maxidx'))
-        guidb = c.get('gui','database')
+        cases = float(c.get('game','cases'))
+        blockpr = float(c.get('game','block'))
+
         print "Setting up listeners..."
         wm = WatchManager()
         mask = IN_CLOSE_WRITE  # watched events
 
-        k = KernelEvents(inqueue, outqueue,insultmaxidx,guidb)
-        #If database is not valid exit here
-        notifier = Notifier(wm,k)
+        notifier = Notifier(wm, KernelEvents(inqueue,outqueue,insultmaxidx,
+                            cases,blockpr))
         wdd = wm.add_watch(outqueue, mask, rec=True)
 
         print "Waiting for events..."

@@ -1,0 +1,87 @@
+*** UserList created on 2010-01-21 12:07:00 ***
+** user root process 1092 **
+SSH_client: 192.168.1.2 43412 22
+Connection date: 2010-01-20 22:51:54
+Process vector: /bin/bash,/usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/sbin/fdisk,/usr/bin/last
+
+*** UserList created on 2010-01-21 12:07:00 ***
+** user root process 1109 **
+SSH_client: 192.168.1.2 43413 22
+Connection date: 2010-01-20 22:55:53
+Process vector: /usr/bin/dircolors,/bin/bash,/usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/bin/uname,/bin/gzip,/usr/bin/clear_console
+
+*** UserList created on 2010-01-21 12:07:00 ***
+*** UserList created on 2010-01-21 12:07:00 ***
+** user root process 1166 **
+SSH_client: 192.168.1.2 34154 22
+Connection date: 2010-01-21 11:27:21
+Process vector: /bin/bash,/usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/usr/bin/clear_console
+
+*** UserList created on 2010-01-21 12:07:00 ***
+** user root process 1180 **
+SSH_client: 192.168.1.2 34155 22
+Connection date: 2010-01-21 11:28:22
+Process vector: /bin/bash,/usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/uname,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/usr/bin/clear_console
+
+*** UserList created on 2010-01-21 12:07:00 ***
+** user root process 1211 **
+SSH_client: 192.168.1.2 33541 22
+Connection date: 2010-01-21 11:33:07
+Process vector: /usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/bin/bash,/bin/ls,/bin/ls,/usr/bin/top
+
+*** UserList created on 2010-01-21 12:07:00 ***
+** user root process 1241 **
+SSH_client: 192.168.1.2 54952 22
+Connection date: 2010-01-21 11:39:24
+Process vector: /usr/bin/lesspipe,/bin/bash,/usr/bin/id,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/bin/ls,/usr/bin/clear_console
+
+*** UserList created on 2010-01-21 12:07:00 ***
+** user root process 1286 **
+SSH_client: 192.168.1.2 50213 22
+Connection date: 2010-01-21 11:51:50
+Process vector: /bin/bash
+
+*** UserList created on 2010-01-21 12:07:00 ***
+*** UserList created on 2010-01-21 12:27:29 ***
+** user root process 1092 **
+SSH_client: 192.168.1.2 43412 22
+Connection date: 2010-01-20 22:51:54
+Process vector: /bin/bash,/usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/sbin/fdisk,/usr/bin/last
+
+*** UserList created on 2010-01-21 12:27:29 ***
+** user root process 1109 **
+SSH_client: 192.168.1.2 43413 22
+Connection date: 2010-01-20 22:55:53
+Process vector: /usr/bin/dircolors,/bin/bash,/usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/bin/uname,/bin/gzip,/usr/bin/clear_console
+
+*** UserList created on 2010-01-21 12:27:29 ***
+*** UserList created on 2010-01-21 12:27:29 ***
+** user root process 1166 **
+SSH_client: 192.168.1.2 34154 22
+Connection date: 2010-01-21 11:27:21
+Process vector: /bin/bash,/usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/usr/bin/clear_console
+
+*** UserList created on 2010-01-21 12:27:29 ***
+** user root process 1180 **
+SSH_client: 192.168.1.2 34155 22
+Connection date: 2010-01-21 11:28:22
+Process vector: /bin/bash,/usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/uname,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/bin/ls,/usr/bin/clear_console
+
+*** UserList created on 2010-01-21 12:27:29 ***
+** user root process 1211 **
+SSH_client: 192.168.1.2 33541 22
+Connection date: 2010-01-21 11:33:07
+Process vector: /usr/bin/id,/usr/bin/lesspipe,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/bin/bash,/bin/ls,/bin/ls,/usr/bin/top
+
+*** UserList created on 2010-01-21 12:27:29 ***
+** user root process 1241 **
+SSH_client: 192.168.1.2 54952 22
+Connection date: 2010-01-21 11:39:24
+Process vector: /usr/bin/lesspipe,/bin/bash,/usr/bin/id,/usr/bin/basename,/usr/bin/dirname,/usr/bin/dircolors,/bin/ls,/usr/bin/clear_console
+
+*** UserList created on 2010-01-21 12:27:29 ***
+** user root process 1286 **
+SSH_client: 192.168.1.2 50213 22
+Connection date: 2010-01-21 11:51:50
+Process vector: /bin/bash
+
